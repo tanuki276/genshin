@@ -1,1 +1,163 @@
-
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>National Pudding</title>
+    <style>
+        :root { 
+            --bg: #0d0d0d; --card-bg: #1a1a1a; --accent: #00d4ff; 
+            --gold: #ffcc00; --warn: #ffbb33; --border: #333;
+        }
+        body { font-family: 'Helvetica Neue', Arial, sans-serif; background: var(--bg); color: #e0e0e0; margin: 0; padding: 20px; }
+        .container { max-width: 900px; margin: 0 auto; }
+        .header-title { text-align: center; color: var(--accent); margin-bottom: 5px; }
+        .input-group { margin-bottom: 20px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
+        input, textarea { padding: 12px; border-radius: 5px; border: 1px solid var(--border); background: #222; color: #fff; outline: none; }
+        input { width: 250px; }
+        button { padding: 12px 24px; border-radius: 5px; background: var(--accent); border: none; font-weight: bold; cursor: pointer; color: #000; transition: 0.3s; }
+        button:hover { opacity: 0.8; }
+        .status-msg { text-align: center; margin-bottom: 15px; color: var(--accent); font-weight: bold; height: 1.2em; }
+        .card { background: var(--card-bg); border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid var(--border); position: relative; box-shadow: 0 4px 20px rgba(0,0,0,0.6); }
+        .score-big { font-size: 2.8em; color: var(--gold); font-weight: bold; position: absolute; right: 20px; top: 20px; text-shadow: 0 0 10px rgba(255,204,0,0.3); }
+        .type-badge { display: inline-block; padding: 2px 10px; border-radius: 4px; background: #333; color: var(--accent); font-size: 0.75em; margin-bottom: 10px; border: 1px solid var(--accent); }
+        .relic-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-top: 15px; }
+        .relic-item { background: #222; padding: 10px; border-radius: 5px; border-left: 3px solid var(--accent); font-size: 0.75em; line-height: 1.4; }
+        .contact-form { background: #111; padding: 20px; border-radius: 12px; margin-top: 50px; border: 1px dotted #444; }
+        .contact-form textarea { width: 100%; height: 80px; box-sizing: border-box; margin-bottom: 10px; resize: none; }
+        .footer { text-align: center; font-size: 0.7em; color: #444; margin-top: 50px; }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1 class="header-title">ドイツ愛好会<small style="font-size:0.4em; color: #666;">ドイツ連邦共和国</small></h1>
+    <div class="input-group">
+        <input type="number" id="uid" placeholder="UIDを入力">
+        <button onclick="App.startSync()">開始</button>
+    </div>
+    <div id="status" class="status-msg">リソース読み込み中...</div>
+    <div id="result"></div>
+    <div class="contact-form">
+        <h4 style="margin-top:0;">お問い合わせ / バグレポート</h4>
+        <textarea id="contactMsg" placeholder="不具合報告や要望を記入してください"></textarea>
+        <button onclick="App.sendContact()" style="padding: 8px 16px; font-size: 12px;">Discordへ送信</button>
+    </div>
+    <div class="footer">Powered by Enka.Network | Securitized with GitHub Actions</div>
+</div>
+<script>
+const CONFIG = {
+    PROXY_URL: "https://corsproxy.io/?",
+    ENKA_API: "https://enka.network/api/uid/",
+    DB_PATH: "./genshin_master_db.json",
+    WEBHOOK_URL: "GH_SECRET_WEBHOOK_PLACEHOLDER", 
+    SCORE_WEIGHTS: { 
+        CRIT_RATE: 2.0, 
+        CRIT_DMG: 1.0, 
+        EM: 0.5,
+        ER: 0.0
+    }
+};
+const PROP_NAMES = {
+    FIGHT_PROP_CRITICAL: "会心率%",
+    FIGHT_PROP_CRITICAL_HURT: "会心ダメージ%",
+    FIGHT_PROP_ELEMENT_MASTERY: "元素熟知",
+    FIGHT_PROP_CHARGE_EFFICIENCY: "元素チャージ効率%",
+    FIGHT_PROP_ATTACK_PERCENT: "攻撃力%",
+    FIGHT_PROP_HP_PERCENT: "HP%",
+    FIGHT_PROP_DEFENSE_PERCENT: "防御力%",
+    FIGHT_PROP_ATTACK: "攻撃力",
+    FIGHT_PROP_HP: "HP",
+    FIGHT_PROP_DEFENSE: "防御力"
+};
+const POS_NAMES = {
+    "EQUIP_BRACER": "生の花", "EQUIP_NECKLACE": "死の羽",
+    "EQUIP_SHOES": "時の砂", "EQUIP_RING": "空の杯", "EQUIP_DRESS": "理の冠"
+};
+const App = {
+    masterDB: null,
+    async init() {
+        try {
+            const res = await fetch(CONFIG.DB_PATH);
+            if(res.ok) {
+                const data = await res.json();
+                this.masterDB = data.avatars;
+                this.updateStatus("システム準備完了");
+            } else {
+                throw new Error();
+            }
+        } catch (e) { 
+            this.updateStatus("リソースが読み込めませんでした"); 
+        }
+    },
+    updateStatus(msg) { document.getElementById('status').innerText = msg; },
+    async startSync() {
+        const uid = document.getElementById('uid').value;
+        if (!uid || uid.length < 9) return alert("正しいUIDを入力してください");
+        this.updateStatus("データ同期中...");
+        try {
+            const res = await fetch(CONFIG.PROXY_URL + encodeURIComponent(CONFIG.ENKA_API + uid));
+            if (!res.ok) throw new Error("APIアクセスに失敗しました");
+            const data = await res.json();
+            if (!data.avatarInfoList) throw new Error("プロフィールが非公開です");
+            let html = "";
+            data.avatarInfoList.forEach(av => {
+                let totalScore = 0;
+                let relicHtml = "";
+                av.equipList.forEach(eq => {
+                    if (!eq.reliquary) return;
+                    const pos = POS_NAMES[eq.flat.equipType] || eq.flat.equipType;
+                    const substats = eq.flat.reliquarySubstats || [];
+                    let subText = "";
+                    let eqScore = 0;
+                    substats.forEach(sub => {
+                        const p = sub.appendPropId;
+                        const v = sub.statValue;
+                        let w = 0;
+                        if (p === "FIGHT_PROP_CRITICAL") w = CONFIG.SCORE_WEIGHTS.CRIT_RATE;
+                        else if (p === "FIGHT_PROP_CRITICAL_HURT") w = CONFIG.SCORE_WEIGHTS.CRIT_DMG;
+                        else if (p === "FIGHT_PROP_ELEMENT_MASTERY") w = CONFIG.SCORE_WEIGHTS.EM;
+                        const pt = v * w;
+                        eqScore += pt;
+                        subText += `<div style="color:${w > 0 ? 'var(--accent)':'#777'}">${PROP_NAMES[p]||p}: +${v} (${pt.toFixed(1)}pt)</div>`;
+                    });
+                    totalScore += eqScore;
+                    relicHtml += `<div class="relic-item"><strong>${pos}</strong><br>${subText}<strong>Score: ${eqScore.toFixed(1)}</strong></div>`;
+                });
+                const name = this.masterDB?.[av.avatarId]?.name || `Character ID: ${av.avatarId}`;
+                html += `
+                    <div class="card">
+                        <div class="score-big">${totalScore.toFixed(1)}</div>
+                        <div style="font-size:1.4em; font-weight:bold; color:var(--accent)">${name}</div>
+                        <div class="relic-list">${relicHtml}</div>
+                    </div>`;
+            });
+            document.getElementById('result').innerHTML = html;
+            this.updateStatus("同期完了");
+        } catch (e) {
+            this.updateStatus("エラー: " + e.message);
+        }
+    },
+    async sendContact() {
+        const msg = document.getElementById('contactMsg').value;
+        if (!msg) return alert("内容を入力してください");
+        if (CONFIG.WEBHOOK_URL.includes("PLACEHOLDER")) {
+            return alert("Webhookが正しくデプロイされていません");
+        }
+        try {
+            const response = await fetch(CONFIG.PROXY_URL + encodeURIComponent(CONFIG.WEBHOOK_URL), {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ content: `あ\n${msg}` })
+            });
+            if (!response.ok) throw new Error();
+            alert("送信に成功しました");
+            document.getElementById('contactMsg').value = "";
+        } catch (e) { 
+            alert("送信失敗（プロキシ制限またはURL無効）"); 
+        }
+    }
+};
+App.init();
+</script>
+</body>
+</html>
