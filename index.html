@@ -3,161 +3,161 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>National Pudding</title>
+    <title>national</title>
     <style>
-        :root { 
-            --bg: #0d0d0d; --card-bg: #1a1a1a; --accent: #00d4ff; 
-            --gold: #ffcc00; --warn: #ffbb33; --border: #333;
-        }
-        body { font-family: 'Helvetica Neue', Arial, sans-serif; background: var(--bg); color: #e0e0e0; margin: 0; padding: 20px; }
-        .container { max-width: 900px; margin: 0 auto; }
-        .header-title { text-align: center; color: var(--accent); margin-bottom: 5px; }
-        .input-group { margin-bottom: 20px; display: flex; gap: 10px; justify-content: center; flex-wrap: wrap; }
-        input, textarea { padding: 12px; border-radius: 5px; border: 1px solid var(--border); background: #222; color: #fff; outline: none; }
-        input { width: 250px; }
-        button { padding: 12px 24px; border-radius: 5px; background: var(--accent); border: none; font-weight: bold; cursor: pointer; color: #000; transition: 0.3s; }
-        button:hover { opacity: 0.8; }
-        .status-msg { text-align: center; margin-bottom: 15px; color: var(--accent); font-weight: bold; height: 1.2em; }
-        .card { background: var(--card-bg); border-radius: 12px; padding: 20px; margin-bottom: 20px; border: 1px solid var(--border); position: relative; box-shadow: 0 4px 20px rgba(0,0,0,0.6); }
-        .score-big { font-size: 2.8em; color: var(--gold); font-weight: bold; position: absolute; right: 20px; top: 20px; text-shadow: 0 0 10px rgba(255,204,0,0.3); }
-        .type-badge { display: inline-block; padding: 2px 10px; border-radius: 4px; background: #333; color: var(--accent); font-size: 0.75em; margin-bottom: 10px; border: 1px solid var(--accent); }
-        .relic-list { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 10px; margin-top: 15px; }
-        .relic-item { background: #222; padding: 10px; border-radius: 5px; border-left: 3px solid var(--accent); font-size: 0.75em; line-height: 1.4; }
-        .contact-form { background: #111; padding: 20px; border-radius: 12px; margin-top: 50px; border: 1px dotted #444; }
-        .contact-form textarea { width: 100%; height: 80px; box-sizing: border-box; margin-bottom: 10px; resize: none; }
-        .footer { text-align: center; font-size: 0.7em; color: #444; margin-top: 50px; }
+        :root { --bg: #0f0f0f; --panel: #1a1a1a; --accent: #00d4ff; --gold: #ffcc00; --text: #e0e0e0; }
+        body { font-family: 'Consolas', 'Monaco', monospace; background: var(--bg); color: var(--text); padding: 20px; line-height: 1.6; }
+        .container { max-width: 1000px; margin: 0 auto; }
+        .header { text-align: center; border-bottom: 2px solid var(--accent); padding-bottom: 10px; margin-bottom: 20px; }
+        
+        .control-panel { background: var(--panel); padding: 20px; border-radius: 8px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-bottom: 20px; }
+        input { padding: 10px; background: #000; border: 1px solid var(--accent); color: var(--accent); font-weight: bold; width: 200px; }
+        button { padding: 10px 20px; background: var(--accent); color: #000; border: none; font-weight: bold; cursor: pointer; border-radius: 4px; }
+        button:hover { filter: brightness(1.2); }
+        button.dl { background: var(--gold); }
+        button.copy { background: #fff; }
+
+        #log-output { background: #000; border: 1px solid #333; padding: 20px; border-radius: 8px; height: 400px; overflow-y: scroll; white-space: pre-wrap; font-size: 0.85em; color: #00ff00; margin-bottom: 20px; }
+        
+        .footer { text-align: center; font-size: 0.7em; color: #555; margin-top: 40px; }
+        .status-msg { color: var(--gold); margin-bottom: 10px; display: block; height: 1.2em; }
     </style>
 </head>
 <body>
+
 <div class="container">
-    <h1 class="header-title">ドイツ愛好会<small style="font-size:0.4em; color: #666;">ドイツ連邦共和国</small></h1>
-    <div class="input-group">
-        <input type="number" id="uid" placeholder="UIDを入力">
-        <button onclick="App.startSync()">開始</button>
+    <div class="header">
+        <h1>ドイツ愛好会</h1>
+        <small>Extraction Unit: Seisen-01</small>
     </div>
-    <div id="status" class="status-msg">リソース読み込み中...</div>
-    <div id="result"></div>
-    <div class="contact-form">
-        <h4 style="margin-top:0;">お問い合わせ / バグレポート</h4>
-        <textarea id="contactMsg" placeholder="不具合報告や要望を記入してください"></textarea>
-        <button onclick="App.sendContact()" style="padding: 8px 16px; font-size: 12px;">Discordへ送信</button>
+
+    <div class="control-panel">
+        <input type="number" id="uid" placeholder="UIDを入力" value="">
+        <button onclick="App.run()">データ抽出</button>
+        <button class="copy" onclick="App.copyToClipboard()">テキストをコピー</button>
     </div>
-    <div class="footer">Powered by Enka.Network | Securitized with GitHub Actions</div>
+
+    <div class="control-panel" style="background: #111; border: 1px solid #333;">
+        <span style="width: 100%; text-align: center; font-size: 0.8em; margin-bottom: 5px;">DOWNLOAD RECORD</span>
+        <button class="dl" onclick="App.download('json')">JSON</button>
+        <button class="dl" onclick="App.download('csv')">CSV</button>
+        <button class="dl" onclick="App.download('txt')">TXT</button>
+        <button class="dl" onclick="App.download('html')">HTML</button>
+    </div>
+
+    <span id="status" class="status-msg">待機中...</span>
+    <div id="log-output">UIDを入力して開始してください。</div>
+
+    <div class="footer">
+        Powered by Enka.Network API | Archiver Mode v1.0
+    </div>
 </div>
+
 <script>
 const CONFIG = {
     PROXY_URL: "https://corsproxy.io/?",
     ENKA_API: "https://enka.network/api/uid/",
-    DB_PATH: "./genshin_master_db.json",
-    WEBHOOK_URL: "GH_SECRET_WEBHOOK_PLACEHOLDER", 
-    SCORE_WEIGHTS: { 
-        CRIT_RATE: 2.0, 
-        CRIT_DMG: 1.0, 
-        EM: 0.5,
-        ER: 0.0
-    }
+    WEBHOOK_URL: "GH_SECRET_WEBHOOK_PLACEHOLDER"
 };
-const PROP_NAMES = {
-    FIGHT_PROP_CRITICAL: "会心率%",
-    FIGHT_PROP_CRITICAL_HURT: "会心ダメージ%",
-    FIGHT_PROP_ELEMENT_MASTERY: "元素熟知",
-    FIGHT_PROP_CHARGE_EFFICIENCY: "元素チャージ効率%",
-    FIGHT_PROP_ATTACK_PERCENT: "攻撃力%",
-    FIGHT_PROP_HP_PERCENT: "HP%",
-    FIGHT_PROP_DEFENSE_PERCENT: "防御力%",
-    FIGHT_PROP_ATTACK: "攻撃力",
-    FIGHT_PROP_HP: "HP",
-    FIGHT_PROP_DEFENSE: "防御力"
-};
-const POS_NAMES = {
-    "EQUIP_BRACER": "生の花", "EQUIP_NECKLACE": "死の羽",
-    "EQUIP_SHOES": "時の砂", "EQUIP_RING": "空の杯", "EQUIP_DRESS": "理の冠"
-};
+
 const App = {
-    masterDB: null,
-    async init() {
-        try {
-            const res = await fetch(CONFIG.DB_PATH);
-            if(res.ok) {
-                const data = await res.json();
-                this.masterDB = data.avatars;
-                this.updateStatus("システム準備完了");
-            } else {
-                throw new Error();
-            }
-        } catch (e) { 
-            this.updateStatus("リソースが読み込めませんでした"); 
-        }
-    },
-    updateStatus(msg) { document.getElementById('status').innerText = msg; },
-    async startSync() {
+    currentData: null,
+    logContent: "",
+
+    updateStatus(msg) { document.getElementById('status').innerText = `>> ${msg}`; },
+
+    async run() {
         const uid = document.getElementById('uid').value;
-        if (!uid || uid.length < 9) return alert("正しいUIDを入力してください");
-        this.updateStatus("データ同期中...");
+        if (!uid) return alert("UIDを入力してください");
+
+        this.updateStatus("情報抽出中...");
+        const output = document.getElementById('log-output');
+        output.innerText = "Accessing Enka.Network Data Base...\n";
+
         try {
             const res = await fetch(CONFIG.PROXY_URL + encodeURIComponent(CONFIG.ENKA_API + uid));
-            if (!res.ok) throw new Error("APIアクセスに失敗しました");
             const data = await res.json();
-            if (!data.avatarInfoList) throw new Error("プロフィールが非公開です");
-            let html = "";
-            data.avatarInfoList.forEach(av => {
-                let totalScore = 0;
-                let relicHtml = "";
-                av.equipList.forEach(eq => {
-                    if (!eq.reliquary) return;
-                    const pos = POS_NAMES[eq.flat.equipType] || eq.flat.equipType;
-                    const substats = eq.flat.reliquarySubstats || [];
-                    let subText = "";
-                    let eqScore = 0;
-                    substats.forEach(sub => {
-                        const p = sub.appendPropId;
-                        const v = sub.statValue;
-                        let w = 0;
-                        if (p === "FIGHT_PROP_CRITICAL") w = CONFIG.SCORE_WEIGHTS.CRIT_RATE;
-                        else if (p === "FIGHT_PROP_CRITICAL_HURT") w = CONFIG.SCORE_WEIGHTS.CRIT_DMG;
-                        else if (p === "FIGHT_PROP_ELEMENT_MASTERY") w = CONFIG.SCORE_WEIGHTS.EM;
-                        const pt = v * w;
-                        eqScore += pt;
-                        subText += `<div style="color:${w > 0 ? 'var(--accent)':'#777'}">${PROP_NAMES[p]||p}: +${v} (${pt.toFixed(1)}pt)</div>`;
-                    });
-                    totalScore += eqScore;
-                    relicHtml += `<div class="relic-item"><strong>${pos}</strong><br>${subText}<strong>Score: ${eqScore.toFixed(1)}</strong></div>`;
-                });
-                const name = this.masterDB?.[av.avatarId]?.name || `Character ID: ${av.avatarId}`;
-                html += `
-                    <div class="card">
-                        <div class="score-big">${totalScore.toFixed(1)}</div>
-                        <div style="font-size:1.4em; font-weight:bold; color:var(--accent)">${name}</div>
-                        <div class="relic-list">${relicHtml}</div>
-                    </div>`;
-            });
-            document.getElementById('result').innerHTML = html;
-            this.updateStatus("同期完了");
+            if (!data.playerInfo) throw new Error("対象のデータが空、または非公開です。");
+
+            this.currentData = data;
+            this.buildLog(data);
+            output.innerText = this.logContent;
+            this.updateStatus("成功しました");
         } catch (e) {
-            this.updateStatus("エラー: " + e.message);
+            output.innerText += `\n[ERROR] ${e.message}`;
+            this.updateStatus("エラー発生");
         }
     },
-    async sendContact() {
-        const msg = document.getElementById('contactMsg').value;
-        if (!msg) return alert("内容を入力してください");
-        if (CONFIG.WEBHOOK_URL.includes("PLACEHOLDER")) {
-            return alert("Webhookが正しくデプロイされていません");
-        }
-        try {
-            const response = await fetch(CONFIG.PROXY_URL + encodeURIComponent(CONFIG.WEBHOOK_URL), {
-                method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
-                body: JSON.stringify({ content: `あ\n${msg}` })
+
+    buildLog(data) {
+        const p = data.playerInfo;
+        let log = `プレイヤー記録\n`;
+        log += `名前: ${p.nickname}\n`;
+        log += `冒険ランク: ${p.level} / 世界ランク: ${p.worldLevel || 0}\n`;
+        log += `アチーブメント達成数: ${p.finishAchievementNum || 0}\n`;
+        log += `深境螺旋: ${p.towerFloorIndex}-${p.towerLevelIndex}\n`;
+        log += `自己紹介: ${p.signature || 'なし'}\n`;
+        log += `------------------------------------------\n`;
+        log += `キャラクターと配備アイテムの詳細\n`;
+
+        if (data.avatarInfoList) {
+            data.avatarInfoList.forEach(av => {
+                log += `\nキャラクター: ${av.avatarId} \n`;
+                av.equipList.forEach(eq => {
+                    if (eq.flat.nameTextMapHash) {
+                        const name = eq.flat.setNameTextMapHash || "アイテム";
+                        log += `  - [${eq.flat.equipType}] ${eq.flat.nameTextMapHash}\n`;
+                        if (eq.reliquary) {
+                            eq.flat.reliquarySubstats?.forEach(sub => {
+                                log += `    * ${sub.appendPropId}: +${sub.statValue}\n`;
+                            });
+                        }
+                    }
+                });
             });
-            if (!response.ok) throw new Error();
-            alert("送信に成功しました");
-            document.getElementById('contactMsg').value = "";
-        } catch (e) { 
-            alert("送信失敗（プロキシ制限またはURL無効）"); 
         }
+        this.logContent = log;
+    },
+
+    download(type) {
+        if (!this.currentData) return alert("データを抽出してください");
+        const uid = this.currentData.uid || "data";
+        let content = "";
+        let mime = "text/plain";
+        let ext = type;
+
+        if (type === 'json') {
+            content = JSON.stringify(this.currentData, null, 2);
+            mime = "application/json";
+        } else if (type === 'txt') {
+            content = this.logContent;
+        } else if (type === 'csv') {
+            content = "Category,Key,Value\n";
+            content += `Player,Nickname,${this.currentData.playerInfo.nickname}\n`;
+            content += `Player,Level,${this.currentData.playerInfo.level}\n`;
+            this.currentData.avatarInfoList?.forEach(av => {
+                content += `Character,ID,${av.avatarId}\n`;
+            });
+            mime = "text/csv";
+        } else if (type === 'html') {
+            content = `<html><body style="background:#000;color:#0f0;font-family:monospace;"><pre>${this.logContent}</pre></body></html>`;
+            mime = "text/html";
+        }
+
+        const blob = new Blob([content], { type: mime });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `GERMANY_CLUB_REPORT_${uid}.${ext}`;
+        a.click();
+    },
+
+    copyToClipboard() {
+        if (!this.logContent) return;
+        navigator.clipboard.writeText(this.logContent);
+        alert("クリップボードにデータをコピーしました。");
     }
 };
-App.init();
 </script>
 </body>
 </html>
