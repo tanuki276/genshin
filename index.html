@@ -1,163 +1,413 @@
-<!DOCTYPE html>
-<html lang="ja">
+<!DOCTYPE html><html lang="ja">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>national</title>
+    <title>Germany Club</title>
     <style>
-        :root { --bg: #0f0f0f; --panel: #1a1a1a; --accent: #00d4ff; --gold: #ffcc00; --text: #e0e0e0; }
-        body { font-family: 'Consolas', 'Monaco', monospace; background: var(--bg); color: var(--text); padding: 20px; line-height: 1.6; }
-        .container { max-width: 1000px; margin: 0 auto; }
-        .header { text-align: center; border-bottom: 2px solid var(--accent); padding-bottom: 10px; margin-bottom: 20px; }
-        
-        .control-panel { background: var(--panel); padding: 20px; border-radius: 8px; display: flex; gap: 10px; flex-wrap: wrap; justify-content: center; margin-bottom: 20px; }
-        input { padding: 10px; background: #000; border: 1px solid var(--accent); color: var(--accent); font-weight: bold; width: 200px; }
-        button { padding: 10px 20px; background: var(--accent); color: #000; border: none; font-weight: bold; cursor: pointer; border-radius: 4px; }
-        button:hover { filter: brightness(1.2); }
-        button.dl { background: var(--gold); }
-        button.copy { background: #fff; }
+        :root { --bg: #0b0b0b; --panel: #161616; --accent: #00d4ff; --gold: #ffcc00; --text: #e0e0e0; --warn: #ff4444; }
+        body { font-family: 'Consolas', 'Monaco', 'Biz UDMincho', monospace; background: var(--bg); color: var(--text); padding: 20px; }
+        .container { max-width: 1100px; margin: 0 auto; }
+        .header { text-align: center; border-bottom: 2px solid var(--accent); padding-bottom: 15px; margin-bottom: 20px; }
+        .title { margin: 0; color: var(--accent); text-transform: uppercase; letter-spacing: 2px; }
+        .subtitle { font-size: 0.8em; color: #666; }.control-panel { background: var(--panel); padding: 15px; border-radius: 8px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; border: 1px solid #333; }
+    input, select { padding: 10px; background: #000; border: 1px solid #444; color: #fff; width: 150px; text-align: center; font-weight: bold; }
+    input:focus, select:focus { border-color: var(--accent); outline: none; }
+    button { padding: 10px 18px; background: #333; color: #fff; border: 1px solid #555; cursor: pointer; border-radius: 4px; font-weight: bold; transition: 0.15s; }
+    button:hover { background: #444; }
+    button.primary { background: var(--accent); color: #000; border: none; }
+    button.dl { background: #224422; border-color: #448844; color: #8f8; }
 
-        #log-output { background: #000; border: 1px solid #333; padding: 20px; border-radius: 8px; height: 400px; overflow-y: scroll; white-space: pre-wrap; font-size: 0.85em; color: #00ff00; margin-bottom: 20px; }
-        
-        .footer { text-align: center; font-size: 0.7em; color: #555; margin-top: 40px; }
-        .status-msg { color: var(--gold); margin-bottom: 10px; display: block; height: 1.2em; }
-    </style>
+    #status { font-size: 0.9em; margin-left: 10px; color: var(--gold); font-weight: bold; }
+    #log-window { background: #000; border: 1px solid #333; border-left: 5px solid var(--accent); padding: 20px; height: 480px; overflow-y: auto; font-family: 'Consolas', monospace; font-size: 0.9em; line-height: 1.5; color: #ddd; }
+    .log-line { margin-bottom: 6px; white-space: pre-wrap; }
+    .muted { color:#7a7a7a; }
+
+    .toast { position: fixed; right: 20px; bottom: 20px; background: #111; color: #eee; border: 1px solid #333; padding: 10px 14px; border-radius: 6px; box-shadow: 0 6px 18px rgba(0,0,0,0.6); display: none; }
+    .busy { opacity: 0.6; pointer-events: none; }
+    .footer { text-align: center; font-size: 0.7em; color: #444; margin-top: 18px; }
+
+    /* small helpers */
+    .kbd { font-family: monospace; background:#111; padding:2px 6px; border-radius:4px; border:1px solid #222; }
+</style>
+
 </head>
-<body>
-
-<div class="container">
+<body><div class="container">
     <div class="header">
-        <h1>ドイツ愛好会</h1>
-        <small>Extraction Unit: Seisen-01</small>
-    </div>
-
-    <div class="control-panel">
-        <input type="number" id="uid" placeholder="UIDを入力" value="">
-        <button onclick="App.run()">データ抽出</button>
-        <button class="copy" onclick="App.copyToClipboard()">テキストをコピー</button>
-    </div>
-
-    <div class="control-panel" style="background: #111; border: 1px solid #333;">
-        <span style="width: 100%; text-align: center; font-size: 0.8em; margin-bottom: 5px;">DOWNLOAD RECORD</span>
-        <button class="dl" onclick="App.download('json')">JSON</button>
-        <button class="dl" onclick="App.download('csv')">CSV</button>
-        <button class="dl" onclick="App.download('txt')">TXT</button>
-        <button class="dl" onclick="App.download('html')">HTML</button>
-    </div>
-
-    <span id="status" class="status-msg">待機中...</span>
-    <div id="log-output">UIDを入力して開始してください。</div>
-
-    <div class="footer">
-        Powered by Enka.Network API | Archiver Mode v1.0
-    </div>
+        <h1 class="title">ドイツ愛好会</h1>
+        <span class="subtitle">連邦共和国</span>
+    </div><div class="control-panel" id="controls">
+    <input id="uid" placeholder="Target UID (e.g. 100000000)" inputmode="numeric" />
+    <select id="proxySelect" title="CORS proxy selector">
+        <option value="">Direct (no proxy)</option>
+        <option value="https://corsproxy.io/?">corsproxy.io</option>
+        <option value="https://api.allorigins.win/raw?url=">allorigins.win</option>
+    </select>
+    <button class="primary" id="runBtn">開始</button>
+    <button id="copyBtn">ログをコピー</button>
+    <div style="flex-grow:1"></div>
+    <span style="font-size:0.8em; color:#888; margin-right:8px;">EXPORT:</span>
+    <button class="dl" data-type="txt">TXT</button>
+    <button class="dl" data-type="json">JSON</button>
+    <button class="dl" data-type="csv">CSV</button>
+    <button class="dl" data-type="html">HTML</button>
 </div>
 
-<script>
+<div style="margin-bottom: 6px;">SYSTEM STATUS: <span id="status">初期化中...</span></div>
+<div id="log-window"><div class="log-line muted">読み込み待機中...</div></div>
+
+<div class="footer">
+    Unit: Seisen-01 | Powered by Enka.Network | Local DB Enabled
+</div>
+
+</div><div class="toast" id="toast"></div><script>
+// ===================== CONFIG =====================
 const CONFIG = {
-    PROXY_URL: "https://corsproxy.io/?",
     ENKA_API: "https://enka.network/api/uid/",
-    WEBHOOK_URL: "GH_SECRET_WEBHOOK_PLACEHOLDER"
+    DB_PATH: "./genshin_master_db.json",
+    NAME_PATCH: {
+        10000092: "エミリエ", 10000117: "セトス", 10000099: "キィニチ",
+        10000101: "ムアラニ", 10000102: "カチーナ", 10000100: "シロネン",
+        10000107: "チャスカ", 10000106: "オロルン", 10000109: "マーヴィカ"
+    },
+    UID_REGEX: /^\d{8,10}$/  // typical Genshin UID length
 };
 
-const App = {
-    currentData: null,
-    logContent: "",
+const LOC_DICT = {
+    FIGHT_PROP_CRITICAL: "会心率",
+    FIGHT_PROP_CRITICAL_HURT: "会心ダメ",
+    FIGHT_PROP_ELEMENT_MASTERY: "元素熟知",
+    FIGHT_PROP_CHARGE_EFFICIENCY: "元チャ効率",
+    FIGHT_PROP_ATTACK_PERCENT: "攻撃力%",
+    FIGHT_PROP_HP_PERCENT: "HP%",
+    FIGHT_PROP_DEFENSE_PERCENT: "防御力%",
+    FIGHT_PROP_ATTACK: "攻撃力(実数値)",
+    FIGHT_PROP_HP: "HP(実数値)",
+    FIGHT_PROP_DEFENSE: "防御力(実数値)",
+    FIGHT_PROP_PHYSICAL_ADD_HURT: "物理バフ",
+    FIGHT_PROP_FIRE_ADD_HURT: "炎元素バフ",
+    FIGHT_PROP_ELEC_ADD_HURT: "雷元素バフ",
+    FIGHT_PROP_WATER_ADD_HURT: "水元素バフ",
+    FIGHT_PROP_WIND_ADD_HURT: "風元素バフ",
+    FIGHT_PROP_ICE_ADD_HURT: "氷元素バフ",
+    FIGHT_PROP_ROCK_ADD_HURT: "岩元素バフ",
+    FIGHT_PROP_GRASS_ADD_HURT: "草元素バフ",
+    FIGHT_PROP_HEAL_ADD: "与治癒効果",
+    EQUIP_BRACER: "【生の花】",
+    EQUIP_NECKLACE: "【死の羽】",
+    EQUIP_SHOES: "【時の砂】",
+    EQUIP_RING: "【空の杯】",
+    EQUIP_DRESS: "【理の冠】",
+    EQUIP_WEAPON: "【武器】"
+};
 
-    updateStatus(msg) { document.getElementById('status').innerText = `>> ${msg}`; },
+// ===================== App =====================
+const App = {
+    masterDB: null,
+    currentData: null,
+    reportText: '',
+    busy: false,
+
+    async init() {
+        this.setStatus('接続中...');
+        try {
+            const res = await fetch(CONFIG.DB_PATH, {cache: 'no-store'});
+            if (!res.ok) throw new Error('DB fetch failed');
+            const json = await res.json();
+            // Accept different shapes: { avatars: {...} } or an array or mapping
+            if (json.avatars && typeof json.avatars === 'object') {
+                this.masterDB = json.avatars;
+            } else if (Array.isArray(json)) {
+                // convert array to map by id if possible
+                this.masterDB = {};
+                for (const item of json) {
+                    if (item.id) this.masterDB[item.id] = item;
+                    else if (item.avatarId) this.masterDB[item.avatarId] = item;
+                }
+            } else if (typeof json === 'object') {
+                this.masterDB = json;
+            }
+
+            this.log('System Ready. Master DB loaded.');
+            this.setStatus('システム準備完了');
+        } catch (e) {
+            this.masterDB = null;
+            this.log('[WARNING] Master DB load failed. Operating in patch-only mode.');
+            this.setStatus('Master DB 読込失敗 (パッチモード)');
+        }
+    },
+
+    setStatus(msg) { document.getElementById('status').innerText = msg; },
+
+    log(msg, level = 'info') {
+        const container = document.getElementById('log-window');
+        const line = document.createElement('div');
+        line.className = 'log-line';
+        line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
+        container.appendChild(line);
+        container.scrollTop = container.scrollHeight;
+        // maintain a text copy for export/copy
+        if (level !== 'silent') this.reportText += line.textContent + '\n';
+    },
+
+    toast(msg, timeout = 2500) {
+        const t = document.getElementById('toast');
+        t.textContent = msg;
+        t.style.display = 'block';
+        clearTimeout(t._tm);
+        t._tm = setTimeout(() => t.style.display = 'none', timeout);
+    },
+
+    // Robust name resolver
+    getAvatarName(avatarId) {
+        // check patch first
+        if (CONFIG.NAME_PATCH[avatarId]) return CONFIG.NAME_PATCH[avatarId];
+        const db = this.masterDB;
+        if (!db) return `Unknown (ID:${avatarId})`;
+
+        // keys could be numeric or string
+        const key = avatarId in db ? avatarId : String(avatarId);
+        const entry = db[key];
+        if (!entry) return `Unknown (ID:${avatarId})`;
+
+        // common patterns
+        if (typeof entry === 'string') return entry;
+
+        // multiple possible fields to check
+        const candidates = ['name', 'Name', 'sideIconName', 'SideIconName', 'displayName', 'title'];
+        for (const c of candidates) {
+            if (entry[c]) {
+                if (typeof entry[c] === 'string') return entry[c];
+                if (typeof entry[c] === 'object') {
+                    // attempt ja, jp, ja-JP, or fallback to any locale
+                    const prefer = ['ja', 'jp', 'ja-JP', 'ja_JP', 'jaJP'];
+                    for (const p of prefer) if (entry[c][p]) return entry[c][p];
+                    // otherwise take first value
+                    const val = Object.values(entry[c])[0];
+                    if (typeof val === 'string') return val;
+                }
+            }
+        }
+
+        // fallback: if entry has fields that look like names
+        for (const k of Object.keys(entry)) {
+            if (/name/i.test(k) && typeof entry[k] === 'string') return entry[k];
+        }
+
+        return `Unknown (ID:${avatarId})`;
+    },
+
+    safeGet(obj, path, fallback = '-') {
+        if (!obj) return fallback;
+        try {
+            return path.split('.').reduce((a,b)=> (a && a[b] !== undefined) ? a[b] : undefined, obj) ?? fallback;
+        } catch (e) { return fallback; }
+    },
+
+    validateUID(uid) {
+        if (!uid) return false;
+        uid = String(uid).trim();
+        return CONFIG.UID_REGEX.test(uid);
+    },
 
     async run() {
-        const uid = document.getElementById('uid').value;
-        if (!uid) return alert("UIDを入力してください");
+        if (this.busy) return this.toast('既に解析中です');
+        const uid = document.getElementById('uid').value.trim();
+        const proxy = document.getElementById('proxySelect').value || '';
 
-        this.updateStatus("情報抽出中...");
-        const output = document.getElementById('log-output');
-        output.innerText = "Accessing Enka.Network Data Base...\n";
+        if (!this.validateUID(uid)) {
+            // warn but allow user to proceed — sometimes dev servers use different patterns
+            this.toast('UIDの形式が間違っています');
+        }
+
+        this.busy = true;
+        document.getElementById('controls').classList.add('busy');
+        this.setStatus('データ取得中 (Enka.Network)...');
+        this.log(`Accessing Enka API for UID: ${uid} ...`);
 
         try {
-            const res = await fetch(CONFIG.PROXY_URL + encodeURIComponent(CONFIG.ENKA_API + uid));
+            const url = CONFIG.ENKA_API + encodeURIComponent(uid);
+            const fetchUrl = proxy ? (proxy + encodeURIComponent(url)) : url;
+
+            const controller = new AbortController();
+            const timeout = setTimeout(()=> controller.abort(), 15000);
+
+            const res = await fetch(fetchUrl, { signal: controller.signal });
+            clearTimeout(timeout);
+
+            if (!res.ok) throw new Error('API接続エラー (Status: ' + res.status + ')');
             const data = await res.json();
-            if (!data.playerInfo) throw new Error("対象のデータが空、または非公開です。");
-
             this.currentData = data;
-            this.buildLog(data);
-            output.innerText = this.logContent;
-            this.updateStatus("成功しました");
-        } catch (e) {
-            output.innerText += `\n[ERROR] ${e.message}`;
-            this.updateStatus("エラー発生");
-        }
-    },
 
-    buildLog(data) {
-        const p = data.playerInfo;
-        let log = `プレイヤー記録\n`;
-        log += `名前: ${p.nickname}\n`;
-        log += `冒険ランク: ${p.level} / 世界ランク: ${p.worldLevel || 0}\n`;
-        log += `アチーブメント達成数: ${p.finishAchievementNum || 0}\n`;
-        log += `深境螺旋: ${p.towerFloorIndex}-${p.towerLevelIndex}\n`;
-        log += `自己紹介: ${p.signature || 'なし'}\n`;
-        log += `------------------------------------------\n`;
-        log += `キャラクターと配備アイテムの詳細\n`;
+            if (!data.playerInfo) throw new Error('プレイヤー情報が存在しません');
 
-        if (data.avatarInfoList) {
-            data.avatarInfoList.forEach(av => {
-                log += `\nキャラクター: ${av.avatarId} \n`;
-                av.equipList.forEach(eq => {
-                    if (eq.flat.nameTextMapHash) {
-                        const name = eq.flat.setNameTextMapHash || "アイテム";
-                        log += `  - [${eq.flat.equipType}] ${eq.flat.nameTextMapHash}\n`;
-                        if (eq.reliquary) {
-                            eq.flat.reliquarySubstats?.forEach(sub => {
-                                log += `    * ${sub.appendPropId}: +${sub.statValue}\n`;
-                            });
-                        }
-                    }
-                });
-            });
-        }
-        this.logContent = log;
-    },
+            const report = this.generateReport(data);
+            this.reportText = report; // store plain report
 
-    download(type) {
-        if (!this.currentData) return alert("データを抽出してください");
-        const uid = this.currentData.uid || "data";
-        let content = "";
-        let mime = "text/plain";
-        let ext = type;
-
-        if (type === 'json') {
-            content = JSON.stringify(this.currentData, null, 2);
-            mime = "application/json";
-        } else if (type === 'txt') {
-            content = this.logContent;
-        } else if (type === 'csv') {
-            content = "Category,Key,Value\n";
-            content += `Player,Nickname,${this.currentData.playerInfo.nickname}\n`;
-            content += `Player,Level,${this.currentData.playerInfo.level}\n`;
-            this.currentData.avatarInfoList?.forEach(av => {
-                content += `Character,ID,${av.avatarId}\n`;
-            });
-            mime = "text/csv";
-        } else if (type === 'html') {
-            content = `<html><body style="background:#000;color:#0f0;font-family:monospace;"><pre>${this.logContent}</pre></body></html>`;
-            mime = "text/html";
-        }
-
-        const blob = new Blob([content], { type: mime });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `GERMANY_CLUB_REPORT_${uid}.${ext}`;
-        a.click();
-    },
-
-    copyToClipboard() {
-        if (!this.logContent) return;
-        navigator.clipboard.writeText(this.logContent);
-        alert("クリップボードにデータをコピーしました。");
+            // replace log window with full report (preserve small header)
+            const w = document.getElementById('log-window');
+            w.innerHTML = '<pre class="log-line">' + this.escapeHtml(report) + '</pre>';this.setStatus('成功しました');
+        this.toast('解析完了');
+        this.log('Report generated (silent)', 'silent');
+    } catch (e) {
+        this.setStatus('エラー発生');
+        this.log(`ERROR: ${e.message}`);
+        this.toast('データ取得に失敗しました');
+    } finally {
+        this.busy = false;
+        document.getElementById('controls').classList.remove('busy');
     }
+},
+
+escapeCsvCell(v) {
+    if (v === null || v === undefined) return '';
+    v = String(v);
+    if (/[",\n]/.test(v)) return '"' + v.replace(/"/g, '""') + '"';
+    return v;
+},
+
+escapeHtml(s) {
+    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'\n');
+},
+
+generateReport(data) {
+    const p = data.playerInfo;
+    const now = new Date().toLocaleString('ja-JP');
+    let txt = '';
+    txt += '========================================\n';
+    txt += `   GERMANY CLUB - TACTICAL REPORT\n`;
+    txt += `   Date: ${now}\n`;
+    txt += '========================================\n\n';
+
+    txt += '[COMMANDER PROFILE]\n';
+    txt += `Name      : ${p.nickname || '-'}\n`;
+    txt += `Rank      : AR ${p.level ?? '-'} (WL ${p.worldLevel ?? '-'}) \n`;
+    txt += `Achieve   : ${p.finishAchievementNum ?? 0}\n`;
+    txt += `Abyss     : ${p.towerFloorIndex ?? '-'}-${p.towerLevelIndex ?? '-'}\n`;
+    txt += `Signature : ${p.signature || '(None)'}\n\n`;
+
+    txt += '[UNIT DEPLOYMENT STATUS]\n';
+    const avatars = data.avatarInfoList || [];
+    if (!avatars.length) {
+        txt += '>> 公開キャラクターなし (Hidden Details)\n';
+        return txt;
+    }
+
+    // iterate safely
+    for (const av of avatars) {
+        const avatarId = av.avatarId ?? av.avatar_id ?? av.id;
+        const name = this.getAvatarName(avatarId);
+        const level = this.safeGet(av, 'propMap.4001.val', 'N/A');
+        const favor = this.safeGet(av, 'fetterInfo.expLevel', 'N/A');
+
+        txt += '----------------------------------------\n';
+        txt += `${name} (Lv.${level}) 好感度:${favor}\n`;
+
+        const equips = av.equipList || [];
+        if (!equips.length) {
+            txt += '   装備なし\n\n';
+            continue; // do not abort entire loop
+        }
+
+        for (const eq of equips) {
+            const flat = eq.flat || {};
+            const typeRaw = flat.equipType || flat.pos || 'UNKNOWN_SLOT';
+            const typeName = LOC_DICT[typeRaw] || typeRaw;
+
+            if (flat.itemType === 'ITEM_WEAPON') {
+                const rank = flat.rankLevel ?? flat.rank ?? '-';
+                const wlv = this.safeGet(eq, 'weapon.level', '-');
+                const main = (flat.weaponStats && flat.weaponStats[0]) || null;
+                txt += `   ${typeName} Rank:${rank} (Lv.${wlv})\n`;
+                if (main) {
+                    const mName = LOC_DICT[main.appendPropId] || main.appendPropId || 'MainStat';
+                    txt += `      Main: ${mName} ${main.statValue}\n`;
+                }
+            } else if (flat.itemType === 'ITEM_RELIQUARY') {
+                txt += `   ${typeName} \n`;
+                const subs = flat.reliquarySubstats || [];
+                if (!subs.length) {
+                    txt += '      - substats: none\n';
+                }
+                for (const sub of subs) {
+                    const sName = LOC_DICT[sub.appendPropId] || sub.appendPropId || 'Sub';
+                    txt += `      - ${sName.padEnd(8, '　')}: +${sub.statValue}\n`;
+                }
+            } else {
+                // unknown type: print basic info
+                txt += `   ${typeName} (type:${flat.itemType || 'unknown'})\n`;
+            }
+        }
+        txt += '\n';
+    }
+
+    return txt;
+},
+
+copy() {
+    const text = this.reportText || '';
+    if (!text) return this.toast('コピーするログがありません');
+    navigator.clipboard.writeText(text).then(()=> this.toast('クリップボードにコピーしました'))
+        .catch(()=> this.toast('コピーに失敗しました'));
+},
+
+download(type) {
+    if (!this.currentData) return this.toast('データがありません');
+    const uid = this.currentData.uid || (document.getElementById('uid').value || 'Unknown');
+    let content = '';
+    let mime = 'text/plain';
+    let ext = type;
+
+    if (type === 'json') {
+        content = JSON.stringify(this.currentData, null, 2);
+        mime = 'application/json';
+    } else if (type === 'txt') {
+        content = this.reportText || this.generateReport(this.currentData);
+    } else if (type === 'html') {
+        content = `<!doctype html><meta charset='utf-8'><style>body{background:#111;color:#eee;font-family:monospace;padding:20px}</style><pre>${this.escapeHtml(this.reportText || this.generateReport(this.currentData))}</pre>`;
+        mime = 'text/html';
+    } else if (type === 'csv') {
+        // produce a useful CSV: Character,UID,Slot,Stat,Value,WeaponLv,WeaponRank
+        const rows = [['Character','UID','Slot','Stat','Value','WeaponLv','WeaponRank']];
+        const avatars = this.currentData.avatarInfoList || [];
+        for (const av of avatars) {
+            const avatarId = av.avatarId ?? av.avatar_id ?? av.id;
+            const cname = this.getAvatarName(avatarId);
+            const equips = av.equipList || [];
+            for (const eq of equips) {
+                const flat = eq.flat || {};
+                const slot = flat.equipType || flat.pos || '';
+                if (flat.itemType === 'ITEM_RELIQUARY') {
+                    for (const sub of (flat.reliquarySubstats||[])) {
+                        const sName = LOC_DICT[sub.appendPropId] || sub.appendPropId || '';
+                        rows.push([cname, uid, slot, sName, sub.statValue, '', '']);
+                    }
+                } else if (flat.itemType === 'ITEM_WEAPON') {
+                    const wlv = this.safeGet(eq, 'weapon.level', '');
+                    const wrank = flat.rankLevel ?? flat.rank ?? '';
+                    const main = (flat.weaponStats && flat.weaponStats[0]) || {};
+                    const mName = LOC_DICT[main.appendPropId] || main.appendPropId || 'Main';
+                    rows.push([cname, uid, slot, mName, main.statValue ?? '', wlv, wrank]);
+                } else {
+                    rows.push([cname, uid, slot, flat.itemType||'', '', '', '']);
+                }
+            }
+        }
+        content = rows.map(r => r.map(c=>this.escapeCsvCell(c)).join(',')).join('\n');
+        mime = 'text/csv';
+    }
+
+    const blob = new Blob([content], {type: mime});
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = `GC_LOG_${uid}_${new Date().toISOString().slice(0,10)}.${ext}`;
+    a.click();
+    this.toast('エクスポート完了');
+}
+
 };
-</script>
+ (document.getElementById('runBtn')).addEventListener('click', ()=> App.run()); document.getElementById('copyBtn').addEventListener('click', ()=> App.copy()); Array.from(document.querySelectorAll('button.dl')).forEach(b => b.addEventListener('click', e => App.download(e.currentTarget.dataset.type)));
+
+// init App.init(); </script>
+
 </body>
 </html>
