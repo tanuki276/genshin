@@ -1,413 +1,81 @@
-<!DOCTYPE html><html lang="ja">
+<!doctype html>
+<html lang="ja">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Germany Club</title>
-    <style>
-        :root { --bg: #0b0b0b; --panel: #161616; --accent: #00d4ff; --gold: #ffcc00; --text: #e0e0e0; --warn: #ff4444; }
-        body { font-family: 'Consolas', 'Monaco', 'Biz UDMincho', monospace; background: var(--bg); color: var(--text); padding: 20px; }
-        .container { max-width: 1100px; margin: 0 auto; }
-        .header { text-align: center; border-bottom: 2px solid var(--accent); padding-bottom: 15px; margin-bottom: 20px; }
-        .title { margin: 0; color: var(--accent); text-transform: uppercase; letter-spacing: 2px; }
-        .subtitle { font-size: 0.8em; color: #666; }.control-panel { background: var(--panel); padding: 15px; border-radius: 8px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 12px; border: 1px solid #333; }
-    input, select { padding: 10px; background: #000; border: 1px solid #444; color: #fff; width: 150px; text-align: center; font-weight: bold; }
-    input:focus, select:focus { border-color: var(--accent); outline: none; }
-    button { padding: 10px 18px; background: #333; color: #fff; border: 1px solid #555; cursor: pointer; border-radius: 4px; font-weight: bold; transition: 0.15s; }
-    button:hover { background: #444; }
-    button.primary { background: var(--accent); color: #000; border: none; }
-    button.dl { background: #224422; border-color: #448844; color: #8f8; }
-
-    #status { font-size: 0.9em; margin-left: 10px; color: var(--gold); font-weight: bold; }
-    #log-window { background: #000; border: 1px solid #333; border-left: 5px solid var(--accent); padding: 20px; height: 480px; overflow-y: auto; font-family: 'Consolas', monospace; font-size: 0.9em; line-height: 1.5; color: #ddd; }
-    .log-line { margin-bottom: 6px; white-space: pre-wrap; }
-    .muted { color:#7a7a7a; }
-
-    .toast { position: fixed; right: 20px; bottom: 20px; background: #111; color: #eee; border: 1px solid #333; padding: 10px 14px; border-radius: 6px; box-shadow: 0 6px 18px rgba(0,0,0,0.6); display: none; }
-    .busy { opacity: 0.6; pointer-events: none; }
-    .footer { text-align: center; font-size: 0.7em; color: #444; margin-top: 18px; }
-
-    /* small helpers */
-    .kbd { font-family: monospace; background:#111; padding:2px 6px; border-radius:4px; border:1px solid #222; }
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="theme-color" content="#0b0f18">
+<title>Genshin UID Analyzer</title>
+<style>
+:root{--bg:#090d14;--panel:#111824;--panel2:#0d131d;--line:#243044;--text:#eef3fb;--muted:#8492a8;--accent:#5b8cff;--accent2:#8b7cff;--ok:#48d597;--danger:#ff667d;--shadow:0 16px 50px rgba(0,0,0,.3)}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:radial-gradient(circle at 20% -10%,#1a2340 0,#090d14 42%),var(--bg);color:var(--text);font-family:Inter,system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI","Noto Sans JP",sans-serif}button,input,select{font:inherit}.app{max-width:1180px;margin:auto;padding:22px 16px 40px}.top{display:flex;align-items:center;justify-content:space-between;gap:14px;margin-bottom:20px}.brand{display:flex;align-items:center;gap:12px}.brand-icon{width:42px;height:42px;border:1px solid #34425a;border-radius:14px;display:grid;place-items:center;background:linear-gradient(145deg,#172039,#0c111b);font-weight:800;color:#9db5ff}.eyebrow{font-size:11px;letter-spacing:.16em;color:var(--muted);text-transform:uppercase}.brand h1{margin:1px 0 0;font-size:24px;line-height:1.1}.version{font-size:12px;color:var(--muted);padding:7px 10px;border:1px solid var(--line);border-radius:999px;background:#0c111a}.hero{padding:22px;border:1px solid var(--line);border-radius:22px;background:linear-gradient(145deg,rgba(20,29,44,.94),rgba(12,17,26,.94));box-shadow:var(--shadow);margin-bottom:16px}.hero h2{margin:0 0 7px;font-size:20px}.hero p{margin:0;color:var(--muted);font-size:13px}.controls{display:grid;grid-template-columns:minmax(0,1fr) 170px 116px;gap:10px;margin-top:18px}.field{position:relative}.field input,.field select{width:100%;height:48px;padding:0 14px;border-radius:13px;border:1px solid var(--line);background:#0a0f18;color:var(--text);outline:0}.field input:focus,.field select:focus{border-color:var(--accent);box-shadow:0 0 0 3px rgba(91,140,255,.12)}button{height:48px;border:1px solid var(--line);border-radius:13px;background:#151d2a;color:var(--text);cursor:pointer;font-weight:700;transition:.18s transform,.18s background,.18s border-color}button:hover{background:#1b2638;border-color:#3a4963}button:active{transform:translateY(1px)}button.primary{border:0;background:linear-gradient(135deg,var(--accent),var(--accent2));color:white;box-shadow:0 8px 24px rgba(91,140,255,.22)}button.secondary{height:42px;padding:0 14px}button:disabled{opacity:.5;cursor:not-allowed}.quick{display:flex;align-items:center;gap:8px;flex-wrap:wrap;margin-top:12px}.hint{font-size:12px;color:var(--muted)}.statusbar{display:flex;align-items:center;gap:10px;margin:16px 0}.dot{width:9px;height:9px;border-radius:50%;background:var(--muted);box-shadow:0 0 0 5px rgba(132,146,168,.08)}.dot.ok{background:var(--ok);box-shadow:0 0 0 5px rgba(72,213,151,.08)}.dot.err{background:var(--danger);box-shadow:0 0 0 5px rgba(255,102,125,.08)}#status{font-size:13px;color:#cbd6e6}.grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px}.card{padding:16px;border:1px solid var(--line);border-radius:16px;background:var(--panel);min-height:92px}.label{font-size:11px;color:var(--muted);margin-bottom:9px}.value{font-size:22px;font-weight:800;word-break:break-word}.value.small{font-size:16px}.layout{display:grid;grid-template-columns:1fr 300px;gap:16px}.panel{border:1px solid var(--line);border-radius:18px;background:var(--panel);overflow:hidden}.panel-head{padding:15px 16px;border-bottom:1px solid var(--line);display:flex;align-items:center;justify-content:space-between;gap:10px}.panel-title{font-weight:800}.panel-sub{font-size:11px;color:var(--muted)}.report{height:640px;overflow:auto;background:#080c12;padding:16px}.report pre{white-space:pre-wrap;word-break:break-word;margin:0;font:13px/1.75 ui-monospace,SFMono-Regular,Menlo,Monaco,Consolas,monospace;color:#dfe7f4}.side{padding:14px}.side h3{font-size:13px;margin:0 0 10px}.actions{display:grid;grid-template-columns:1fr 1fr;gap:8px}.actions button{height:42px}.search{width:100%;height:42px;padding:0 12px;border-radius:11px;border:1px solid var(--line);background:#0a0f18;color:var(--text);outline:0}.char-list{display:grid;gap:7px;margin-top:10px;max-height:470px;overflow:auto}.char{display:flex;align-items:center;justify-content:space-between;gap:8px;padding:10px 11px;border-radius:11px;background:var(--panel2);border:1px solid #1b2535}.char-name{font-size:12px;font-weight:700;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}.char-lv{font-size:11px;color:var(--muted);white-space:nowrap}.empty{padding:30px 10px;text-align:center;color:var(--muted);font-size:13px}.footer{margin-top:18px;color:#66748a;font-size:11px;text-align:center}.toast{position:fixed;left:50%;bottom:22px;transform:translate(-50%,20px);opacity:0;pointer-events:none;padding:11px 15px;background:#151c29;border:1px solid #334158;border-radius:12px;box-shadow:var(--shadow);font-size:13px;transition:.2s}.toast.show{opacity:1;transform:translate(-50%,0)}@media(max-width:900px){.layout{grid-template-columns:1fr}.side{order:-1}.char-list{max-height:240px}}@media(max-width:700px){.app{padding:14px 12px 28px}.top{margin-bottom:14px}.controls{grid-template-columns:1fr 1fr}.controls .field:first-child{grid-column:1/-1}.controls .primary{grid-column:1/-1}.grid{grid-template-columns:1fr 1fr}.hero{padding:18px}.report{height:520px}.brand h1{font-size:20px}}@media(max-width:430px){.grid{grid-template-columns:1fr}.controls{grid-template-columns:1fr}.controls .field:first-child,.controls .primary{grid-column:auto}}
 </style>
-
 </head>
-<body><div class="container">
-    <div class="header">
-        <h1 class="title">ドイツ愛好会</h1>
-        <span class="subtitle">連邦共和国</span>
-    </div><div class="control-panel" id="controls">
-    <input id="uid" placeholder="Target UID (e.g. 100000000)" inputmode="numeric" />
-    <select id="proxySelect" title="CORS proxy selector">
-        <option value="">Direct (no proxy)</option>
-        <option value="https://corsproxy.io/?">corsproxy.io</option>
-        <option value="https://api.allorigins.win/raw?url=">allorigins.win</option>
-    </select>
-    <button class="primary" id="runBtn">開始</button>
-    <button id="copyBtn">ログをコピー</button>
-    <div style="flex-grow:1"></div>
-    <span style="font-size:0.8em; color:#888; margin-right:8px;">EXPORT:</span>
-    <button class="dl" data-type="txt">TXT</button>
-    <button class="dl" data-type="json">JSON</button>
-    <button class="dl" data-type="csv">CSV</button>
-    <button class="dl" data-type="html">HTML</button>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand"><div class="brand-icon">G</div><div><div class="eyebrow">Player Data Tool</div><h1>Genshin UID Analyzer</h1></div></div>
+    <div class="version">Enka.Network</div>
+  </header>
+
+  <section class="hero">
+    <h2>原神プレイヤーデータを解析</h2>
+    <p>UIDを入力して、公開されているプロフィール・キャラクター・装備情報を確認できます。</p>
+    <div class="controls" id="controls">
+      <div class="field"><input id="uid" placeholder="UID（8〜10桁）" inputmode="numeric" autocomplete="off" maxlength="10"></div>
+      <div class="field"><select id="proxySelect"><option value="">直接接続</option><option value="https://corsproxy.io/?">corsproxy.io</option><option value="https://api.allorigins.win/raw?url=">allorigins.win</option></select></div>
+      <button class="primary" id="runBtn">解析開始</button>
+    </div>
+    <div class="quick"><button class="secondary" id="clearBtn">クリア</button><span class="hint">Enterでも解析できます。最後に使ったUIDは端末内に保存されます。</span></div>
+  </section>
+
+  <div class="statusbar"><span class="dot" id="dot"></span><span id="status">初期化中...</span></div>
+
+  <section class="grid">
+    <div class="card"><div class="label">プレイヤー</div><div class="value small" id="sumName">-</div></div>
+    <div class="card"><div class="label">冒険ランク</div><div class="value" id="sumAR">-</div></div>
+    <div class="card"><div class="label">世界ランク</div><div class="value" id="sumWL">-</div></div>
+    <div class="card"><div class="label">公開キャラクター</div><div class="value" id="sumChars">-</div></div>
+  </section>
+
+  <section class="layout">
+    <div class="panel">
+      <div class="panel-head"><div><div class="panel-title">解析レポート</div><div class="panel-sub">PLAYER / CHARACTERS / EQUIPMENT</div></div><button class="secondary" id="copyBtn">コピー</button></div>
+      <div class="report" id="log-window"><div class="empty">UIDを入力して「解析開始」を押してください。</div></div>
+    </div>
+    <aside class="panel">
+      <div class="panel-head"><div><div class="panel-title">キャラクター</div><div class="panel-sub" id="charCount">0件</div></div></div>
+      <div class="side">
+        <input class="search" id="charSearch" placeholder="キャラクター名で検索">
+        <div class="char-list" id="charList"><div class="empty">解析後に一覧を表示します。</div></div>
+        <div style="height:12px"></div>
+        <h3>エクスポート</h3>
+        <div class="actions"><button data-type="txt">TXT</button><button data-type="json">JSON</button><button data-type="csv">CSV</button><button data-type="html">HTML</button></div>
+      </div>
+    </aside>
+  </section>
+
+  <div class="footer">Genshin UID Analyzer · Powered by Enka.Network · Local Master DB</div>
 </div>
-
-<div style="margin-bottom: 6px;">SYSTEM STATUS: <span id="status">初期化中...</span></div>
-<div id="log-window"><div class="log-line muted">読み込み待機中...</div></div>
-
-<div class="footer">
-    Unit: Seisen-01 | Powered by Enka.Network | Local DB Enabled
-</div>
-
-</div><div class="toast" id="toast"></div><script>
-// ===================== CONFIG =====================
-const CONFIG = {
-    ENKA_API: "https://enka.network/api/uid/",
-    DB_PATH: "./genshin_master_db.json",
-    NAME_PATCH: {
-        10000092: "エミリエ", 10000117: "セトス", 10000099: "キィニチ",
-        10000101: "ムアラニ", 10000102: "カチーナ", 10000100: "シロネン",
-        10000107: "チャスカ", 10000106: "オロルン", 10000109: "マーヴィカ"
-    },
-    UID_REGEX: /^\d{8,10}$/  // typical Genshin UID length
+<div class="toast" id="toast"></div>
+<script>
+const CONFIG={ENKA_API:'https://enka.network/api/uid/',DB_PATH:'./genshin_master_db.json',UID_REGEX:/^\d{8,10}$/,NAME_PATCH:{10000092:'エミリエ',10000117:'セトス',10000099:'キィニチ',10000101:'ムアラニ',10000102:'カチーナ',10000100:'シロネン',10000107:'チャスカ',10000106:'オロルン',10000109:'マーヴィカ'}};
+const LOC={FIGHT_PROP_CRITICAL:'会心率',FIGHT_PROP_CRITICAL_HURT:'会心ダメ',FIGHT_PROP_ELEMENT_MASTERY:'元素熟知',FIGHT_PROP_CHARGE_EFFICIENCY:'元チャ効率',FIGHT_PROP_ATTACK_PERCENT:'攻撃力%',FIGHT_PROP_HP_PERCENT:'HP%',FIGHT_PROP_DEFENSE_PERCENT:'防御力%',FIGHT_PROP_ATTACK:'攻撃力(実数値)',FIGHT_PROP_HP:'HP(実数値)',FIGHT_PROP_DEFENSE:'防御力(実数値)',FIGHT_PROP_PHYSICAL_ADD_HURT:'物理バフ',FIGHT_PROP_FIRE_ADD_HURT:'炎元素バフ',FIGHT_PROP_ELEC_ADD_HURT:'雷元素バフ',FIGHT_PROP_WATER_ADD_HURT:'水元素バフ',FIGHT_PROP_WIND_ADD_HURT:'風元素バフ',FIGHT_PROP_ICE_ADD_HURT:'氷元素バフ',FIGHT_PROP_ROCK_ADD_HURT:'岩元素バフ',FIGHT_PROP_GRASS_ADD_HURT:'草元素バフ',FIGHT_PROP_HEAL_ADD:'与治癒効果',EQUIP_BRACER:'【生の花】',EQUIP_NECKLACE:'【死の羽】',EQUIP_SHOES:'【時の砂】',EQUIP_RING:'【空の杯】',EQUIP_DRESS:'【理の冠】',EQUIP_WEAPON:'【武器】'};
+const App={masterDB:null,currentData:null,reportText:'',chars:[],busy:false,
+async init(){const last=localStorage.getItem('genshin_uid');const proxy=localStorage.getItem('genshin_proxy');if(last)document.getElementById('uid').value=last;if(proxy)document.getElementById('proxySelect').value=proxy;this.setStatus('マスタDBを読み込み中...');try{const r=await fetch(CONFIG.DB_PATH,{cache:'no-store'});if(!r.ok)throw Error('DB fetch failed');const j=await r.json();this.masterDB=j.avatars&&typeof j.avatars==='object'?j.avatars:Array.isArray(j)?Object.fromEntries(j.filter(x=>x&&(x.id||x.avatarId)).map(x=>[x.id||x.avatarId,x])):(j&&typeof j==='object'?j:{});this.setStatus('準備完了','ok')}catch(e){this.masterDB=null;this.setStatus('DB読込失敗（パッチモードで動作）','err') }},
+setStatus(m,state=''){document.getElementById('status').textContent=m;const d=document.getElementById('dot');d.className='dot '+state},
+toast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');clearTimeout(this._toast);this._toast=setTimeout(()=>t.classList.remove('show'),2400)},
+safeGet(o,p,f='-'){try{return p.split('.').reduce((a,b)=>a&&a[b]!==undefined?a[b]:undefined,o)??f}catch{return f}},
+getName(id){if(CONFIG.NAME_PATCH[id])return CONFIG.NAME_PATCH[id];const e=this.masterDB?.[id]??this.masterDB?.[String(id)];if(!e)return 'Unknown (ID:'+id+')';if(typeof e==='string')return e;for(const k of ['name','Name','displayName','title']){const v=e[k];if(typeof v==='string')return v;if(v&&typeof v==='object'){for(const lang of ['ja','jp','ja-JP','ja_JP'])if(typeof v[lang]==='string')return v[lang];const first=Object.values(v).find(x=>typeof x==='string');if(first)return first}}return 'Unknown (ID:'+id+')'},
+escape(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;')},
+escapeCsv(v){v=String(v??'');return /[",\n]/.test(v)?'"'+v.replace(/"/g,'""')+'"':v},
+async run(){if(this.busy)return;const uid=document.getElementById('uid').value.trim();const proxy=document.getElementById('proxySelect').value;if(!CONFIG.UID_REGEX.test(uid)){this.toast('UIDは8〜10桁の数字で入力してください');return}this.busy=true;localStorage.setItem('genshin_uid',uid);localStorage.setItem('genshin_proxy',proxy);document.getElementById('runBtn').disabled=true;this.setStatus('Enka.Networkからデータ取得中...');try{const u=CONFIG.ENKA_API+encodeURIComponent(uid);const fetchUrl=proxy?proxy+encodeURIComponent(u):u;const c=new AbortController();const tm=setTimeout(()=>c.abort(),15000);let r;try{r=await fetch(fetchUrl,{signal:c.signal,headers:{Accept:'application/json'}})}finally{clearTimeout(tm)}if(!r.ok)throw Error('APIエラー: HTTP '+r.status);const d=await r.json();if(!d.playerInfo)throw Error('プレイヤー情報がありません');this.currentData=d;this.render(d);this.setStatus('解析完了','ok');this.toast('解析完了')}catch(e){const msg=e.name==='AbortError'?'タイムアウトしました':e.message;this.setStatus(msg,'err');this.toast('解析に失敗しました');document.getElementById('log-window').innerHTML='<div class="empty">'+this.escape(msg)+'<br><br>直接接続で失敗する場合はCORSプロキシを試してください。</div>'}finally{this.busy=false;document.getElementById('runBtn').disabled=false}},
+render(d){const p=d.playerInfo||{};const avatars=d.avatarInfoList||[];document.getElementById('sumName').textContent=p.nickname||'-';document.getElementById('sumAR').textContent=p.level??'-';document.getElementById('sumWL').textContent=p.worldLevel??'-';document.getElementById('sumChars').textContent=avatars.length;let txt='';txt+='Genshin UID Analyzer\n';txt+='Generated: '+new Date().toLocaleString('ja-JP')+'\n';txt+='UID: '+(d.uid||document.getElementById('uid').value.trim())+'\n';txt+='========================================\n\n';txt+='[PLAYER]\n';txt+='Name      : '+(p.nickname||'-')+'\n';txt+='Adventure : AR '+(p.level??'-')+' / WL '+(p.worldLevel??'-')+'\n';txt+='Achievements: '+(p.finishAchievementNum??0)+'\n';txt+='Abyss     : '+(p.towerFloorIndex??'-')+'-'+(p.towerLevelIndex??'-')+'\n';txt+='Signature : '+(p.signature||'(None)')+'\n\n';txt+='[CHARACTERS]\n';this.chars=avatars.map(av=>({name:this.getName(av.avatarId??av.avatar_id??av.id),level:this.safeGet(av,'propMap.4001.val','N/A'),data:av}));if(!avatars.length)txt+='公開キャラクターなし\n';for(const c of this.chars){const av=c.data;txt+='----------------------------------------\n';txt+=c.name+' (Lv.'+c.level+') 好感度:'+this.safeGet(av,'fetterInfo.expLevel','N/A')+'\n';for(const eq of (av.equipList||[])){const f=eq.flat||{};const type=f.equipType||f.pos||'UNKNOWN_SLOT';const tn=LOC[type]||type;if(f.itemType==='ITEM_WEAPON'){const rank=f.rankLevel??f.rank??'-',wl=this.safeGet(eq,'weapon.level','-'),main=f.weaponStats?.[0];txt+='  '+tn+' Rank:'+rank+' (Lv.'+wl+')\n';if(main)txt+='    Main: '+(LOC[main.appendPropId]||main.appendPropId)+' '+main.statValue+'\n'}else if(f.itemType==='ITEM_RELIQUARY'){txt+='  '+tn+'\n';for(const s of (f.reliquarySubstats||[]))txt+='    - '+(LOC[s.appendPropId]||s.appendPropId)+' : +'+s.statValue+'\n'}}}this.reportText=txt;document.getElementById('log-window').innerHTML='<pre>'+this.escape(txt)+'</pre>';this.renderChars()},
+renderChars(){const q=document.getElementById('charSearch').value.trim().toLowerCase();const list=document.getElementById('charList');const filtered=this.chars.filter(c=>c.name.toLowerCase().includes(q));document.getElementById('charCount').textContent=filtered.length+' / '+this.chars.length+'件';list.innerHTML=filtered.length?filtered.map(c=>'<div class="char"><div class="char-name">'+this.escape(c.name)+'</div><div class="char-lv">Lv.'+this.escape(c.level)+'</div></div>').join(''):'<div class="empty">該当するキャラクターがありません。</div>'},
+copy(){if(!this.reportText)return this.toast('コピーするデータがありません');navigator.clipboard?.writeText(this.reportText).then(()=>this.toast('コピーしました')).catch(()=>this.toast('コピーに失敗しました'))},
+clear(){this.currentData=null;this.reportText='';this.chars=[];document.getElementById('log-window').innerHTML='<div class="empty">UIDを入力して「解析開始」を押してください。</div>';document.getElementById('charList').innerHTML='<div class="empty">解析後に一覧を表示します。</div>';document.getElementById('charCount').textContent='0件';['sumName','sumAR','sumWL','sumChars'].forEach(id=>document.getElementById(id).textContent='-');this.setStatus('入力待ち')},
+download(type){if(!this.currentData)return this.toast('エクスポートするデータがありません');const uid=this.currentData.uid||document.getElementById('uid').value.trim();let content='',mime='text/plain';if(type==='json'){content=JSON.stringify(this.currentData,null,2);mime='application/json'}else if(type==='txt'){content=this.reportText}else if(type==='html'){content='<!doctype html><meta charset="utf-8"><title>Genshin UID Report</title><style>body{background:#0b0f16;color:#edf2f8;font-family:system-ui;padding:24px}pre{white-space:pre-wrap;line-height:1.7}</style><pre>'+this.escape(this.reportText)+'</pre>';mime='text/html'}else{const rows=[['Character','UID','Slot','Stat','Value','WeaponLv','WeaponRank']];for(const c of this.chars){for(const eq of(c.data.equipList||[])){const f=eq.flat||{},slot=f.equipType||f.pos||'';if(f.itemType==='ITEM_RELIQUARY')for(const s of(f.reliquarySubstats||[]))rows.push([c.name,uid,slot,LOC[s.appendPropId]||s.appendPropId,s.statValue,'','']);else if(f.itemType==='ITEM_WEAPON'){const main=f.weaponStats?.[0]||{};rows.push([c.name,uid,slot,LOC[main.appendPropId]||main.appendPropId,main.statValue??'',this.safeGet(eq,'weapon.level',''),f.rankLevel??f.rank??''])}}}content='\ufeff'+rows.map(r=>r.map(x=>this.escapeCsv(x)).join(',')).join('\n');mime='text/csv'}const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([content],{type:mime}));a.download='genshin_uid_'+uid+'_'+new Date().toISOString().slice(0,10)+'.'+type;a.click();URL.revokeObjectURL(a.href);this.toast('エクスポート完了')}
 };
-
-const LOC_DICT = {
-    FIGHT_PROP_CRITICAL: "会心率",
-    FIGHT_PROP_CRITICAL_HURT: "会心ダメ",
-    FIGHT_PROP_ELEMENT_MASTERY: "元素熟知",
-    FIGHT_PROP_CHARGE_EFFICIENCY: "元チャ効率",
-    FIGHT_PROP_ATTACK_PERCENT: "攻撃力%",
-    FIGHT_PROP_HP_PERCENT: "HP%",
-    FIGHT_PROP_DEFENSE_PERCENT: "防御力%",
-    FIGHT_PROP_ATTACK: "攻撃力(実数値)",
-    FIGHT_PROP_HP: "HP(実数値)",
-    FIGHT_PROP_DEFENSE: "防御力(実数値)",
-    FIGHT_PROP_PHYSICAL_ADD_HURT: "物理バフ",
-    FIGHT_PROP_FIRE_ADD_HURT: "炎元素バフ",
-    FIGHT_PROP_ELEC_ADD_HURT: "雷元素バフ",
-    FIGHT_PROP_WATER_ADD_HURT: "水元素バフ",
-    FIGHT_PROP_WIND_ADD_HURT: "風元素バフ",
-    FIGHT_PROP_ICE_ADD_HURT: "氷元素バフ",
-    FIGHT_PROP_ROCK_ADD_HURT: "岩元素バフ",
-    FIGHT_PROP_GRASS_ADD_HURT: "草元素バフ",
-    FIGHT_PROP_HEAL_ADD: "与治癒効果",
-    EQUIP_BRACER: "【生の花】",
-    EQUIP_NECKLACE: "【死の羽】",
-    EQUIP_SHOES: "【時の砂】",
-    EQUIP_RING: "【空の杯】",
-    EQUIP_DRESS: "【理の冠】",
-    EQUIP_WEAPON: "【武器】"
-};
-
-// ===================== App =====================
-const App = {
-    masterDB: null,
-    currentData: null,
-    reportText: '',
-    busy: false,
-
-    async init() {
-        this.setStatus('接続中...');
-        try {
-            const res = await fetch(CONFIG.DB_PATH, {cache: 'no-store'});
-            if (!res.ok) throw new Error('DB fetch failed');
-            const json = await res.json();
-            // Accept different shapes: { avatars: {...} } or an array or mapping
-            if (json.avatars && typeof json.avatars === 'object') {
-                this.masterDB = json.avatars;
-            } else if (Array.isArray(json)) {
-                // convert array to map by id if possible
-                this.masterDB = {};
-                for (const item of json) {
-                    if (item.id) this.masterDB[item.id] = item;
-                    else if (item.avatarId) this.masterDB[item.avatarId] = item;
-                }
-            } else if (typeof json === 'object') {
-                this.masterDB = json;
-            }
-
-            this.log('System Ready. Master DB loaded.');
-            this.setStatus('システム準備完了');
-        } catch (e) {
-            this.masterDB = null;
-            this.log('[WARNING] Master DB load failed. Operating in patch-only mode.');
-            this.setStatus('Master DB 読込失敗 (パッチモード)');
-        }
-    },
-
-    setStatus(msg) { document.getElementById('status').innerText = msg; },
-
-    log(msg, level = 'info') {
-        const container = document.getElementById('log-window');
-        const line = document.createElement('div');
-        line.className = 'log-line';
-        line.textContent = `[${new Date().toLocaleTimeString()}] ${msg}`;
-        container.appendChild(line);
-        container.scrollTop = container.scrollHeight;
-        // maintain a text copy for export/copy
-        if (level !== 'silent') this.reportText += line.textContent + '\n';
-    },
-
-    toast(msg, timeout = 2500) {
-        const t = document.getElementById('toast');
-        t.textContent = msg;
-        t.style.display = 'block';
-        clearTimeout(t._tm);
-        t._tm = setTimeout(() => t.style.display = 'none', timeout);
-    },
-
-    // Robust name resolver
-    getAvatarName(avatarId) {
-        // check patch first
-        if (CONFIG.NAME_PATCH[avatarId]) return CONFIG.NAME_PATCH[avatarId];
-        const db = this.masterDB;
-        if (!db) return `Unknown (ID:${avatarId})`;
-
-        // keys could be numeric or string
-        const key = avatarId in db ? avatarId : String(avatarId);
-        const entry = db[key];
-        if (!entry) return `Unknown (ID:${avatarId})`;
-
-        // common patterns
-        if (typeof entry === 'string') return entry;
-
-        // multiple possible fields to check
-        const candidates = ['name', 'Name', 'sideIconName', 'SideIconName', 'displayName', 'title'];
-        for (const c of candidates) {
-            if (entry[c]) {
-                if (typeof entry[c] === 'string') return entry[c];
-                if (typeof entry[c] === 'object') {
-                    // attempt ja, jp, ja-JP, or fallback to any locale
-                    const prefer = ['ja', 'jp', 'ja-JP', 'ja_JP', 'jaJP'];
-                    for (const p of prefer) if (entry[c][p]) return entry[c][p];
-                    // otherwise take first value
-                    const val = Object.values(entry[c])[0];
-                    if (typeof val === 'string') return val;
-                }
-            }
-        }
-
-        // fallback: if entry has fields that look like names
-        for (const k of Object.keys(entry)) {
-            if (/name/i.test(k) && typeof entry[k] === 'string') return entry[k];
-        }
-
-        return `Unknown (ID:${avatarId})`;
-    },
-
-    safeGet(obj, path, fallback = '-') {
-        if (!obj) return fallback;
-        try {
-            return path.split('.').reduce((a,b)=> (a && a[b] !== undefined) ? a[b] : undefined, obj) ?? fallback;
-        } catch (e) { return fallback; }
-    },
-
-    validateUID(uid) {
-        if (!uid) return false;
-        uid = String(uid).trim();
-        return CONFIG.UID_REGEX.test(uid);
-    },
-
-    async run() {
-        if (this.busy) return this.toast('既に解析中です');
-        const uid = document.getElementById('uid').value.trim();
-        const proxy = document.getElementById('proxySelect').value || '';
-
-        if (!this.validateUID(uid)) {
-            // warn but allow user to proceed — sometimes dev servers use different patterns
-            this.toast('UIDの形式が間違っています');
-        }
-
-        this.busy = true;
-        document.getElementById('controls').classList.add('busy');
-        this.setStatus('データ取得中 (Enka.Network)...');
-        this.log(`Accessing Enka API for UID: ${uid} ...`);
-
-        try {
-            const url = CONFIG.ENKA_API + encodeURIComponent(uid);
-            const fetchUrl = proxy ? (proxy + encodeURIComponent(url)) : url;
-
-            const controller = new AbortController();
-            const timeout = setTimeout(()=> controller.abort(), 15000);
-
-            const res = await fetch(fetchUrl, { signal: controller.signal });
-            clearTimeout(timeout);
-
-            if (!res.ok) throw new Error('API接続エラー (Status: ' + res.status + ')');
-            const data = await res.json();
-            this.currentData = data;
-
-            if (!data.playerInfo) throw new Error('プレイヤー情報が存在しません');
-
-            const report = this.generateReport(data);
-            this.reportText = report; // store plain report
-
-            // replace log window with full report (preserve small header)
-            const w = document.getElementById('log-window');
-            w.innerHTML = '<pre class="log-line">' + this.escapeHtml(report) + '</pre>';this.setStatus('成功しました');
-        this.toast('解析完了');
-        this.log('Report generated (silent)', 'silent');
-    } catch (e) {
-        this.setStatus('エラー発生');
-        this.log(`ERROR: ${e.message}`);
-        this.toast('データ取得に失敗しました');
-    } finally {
-        this.busy = false;
-        document.getElementById('controls').classList.remove('busy');
-    }
-},
-
-escapeCsvCell(v) {
-    if (v === null || v === undefined) return '';
-    v = String(v);
-    if (/[",\n]/.test(v)) return '"' + v.replace(/"/g, '""') + '"';
-    return v;
-},
-
-escapeHtml(s) {
-    return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/\n/g,'\n');
-},
-
-generateReport(data) {
-    const p = data.playerInfo;
-    const now = new Date().toLocaleString('ja-JP');
-    let txt = '';
-    txt += '========================================\n';
-    txt += `   GERMANY CLUB - TACTICAL REPORT\n`;
-    txt += `   Date: ${now}\n`;
-    txt += '========================================\n\n';
-
-    txt += '[COMMANDER PROFILE]\n';
-    txt += `Name      : ${p.nickname || '-'}\n`;
-    txt += `Rank      : AR ${p.level ?? '-'} (WL ${p.worldLevel ?? '-'}) \n`;
-    txt += `Achieve   : ${p.finishAchievementNum ?? 0}\n`;
-    txt += `Abyss     : ${p.towerFloorIndex ?? '-'}-${p.towerLevelIndex ?? '-'}\n`;
-    txt += `Signature : ${p.signature || '(None)'}\n\n`;
-
-    txt += '[UNIT DEPLOYMENT STATUS]\n';
-    const avatars = data.avatarInfoList || [];
-    if (!avatars.length) {
-        txt += '>> 公開キャラクターなし (Hidden Details)\n';
-        return txt;
-    }
-
-    // iterate safely
-    for (const av of avatars) {
-        const avatarId = av.avatarId ?? av.avatar_id ?? av.id;
-        const name = this.getAvatarName(avatarId);
-        const level = this.safeGet(av, 'propMap.4001.val', 'N/A');
-        const favor = this.safeGet(av, 'fetterInfo.expLevel', 'N/A');
-
-        txt += '----------------------------------------\n';
-        txt += `${name} (Lv.${level}) 好感度:${favor}\n`;
-
-        const equips = av.equipList || [];
-        if (!equips.length) {
-            txt += '   装備なし\n\n';
-            continue; // do not abort entire loop
-        }
-
-        for (const eq of equips) {
-            const flat = eq.flat || {};
-            const typeRaw = flat.equipType || flat.pos || 'UNKNOWN_SLOT';
-            const typeName = LOC_DICT[typeRaw] || typeRaw;
-
-            if (flat.itemType === 'ITEM_WEAPON') {
-                const rank = flat.rankLevel ?? flat.rank ?? '-';
-                const wlv = this.safeGet(eq, 'weapon.level', '-');
-                const main = (flat.weaponStats && flat.weaponStats[0]) || null;
-                txt += `   ${typeName} Rank:${rank} (Lv.${wlv})\n`;
-                if (main) {
-                    const mName = LOC_DICT[main.appendPropId] || main.appendPropId || 'MainStat';
-                    txt += `      Main: ${mName} ${main.statValue}\n`;
-                }
-            } else if (flat.itemType === 'ITEM_RELIQUARY') {
-                txt += `   ${typeName} \n`;
-                const subs = flat.reliquarySubstats || [];
-                if (!subs.length) {
-                    txt += '      - substats: none\n';
-                }
-                for (const sub of subs) {
-                    const sName = LOC_DICT[sub.appendPropId] || sub.appendPropId || 'Sub';
-                    txt += `      - ${sName.padEnd(8, '　')}: +${sub.statValue}\n`;
-                }
-            } else {
-                // unknown type: print basic info
-                txt += `   ${typeName} (type:${flat.itemType || 'unknown'})\n`;
-            }
-        }
-        txt += '\n';
-    }
-
-    return txt;
-},
-
-copy() {
-    const text = this.reportText || '';
-    if (!text) return this.toast('コピーするログがありません');
-    navigator.clipboard.writeText(text).then(()=> this.toast('クリップボードにコピーしました'))
-        .catch(()=> this.toast('コピーに失敗しました'));
-},
-
-download(type) {
-    if (!this.currentData) return this.toast('データがありません');
-    const uid = this.currentData.uid || (document.getElementById('uid').value || 'Unknown');
-    let content = '';
-    let mime = 'text/plain';
-    let ext = type;
-
-    if (type === 'json') {
-        content = JSON.stringify(this.currentData, null, 2);
-        mime = 'application/json';
-    } else if (type === 'txt') {
-        content = this.reportText || this.generateReport(this.currentData);
-    } else if (type === 'html') {
-        content = `<!doctype html><meta charset='utf-8'><style>body{background:#111;color:#eee;font-family:monospace;padding:20px}</style><pre>${this.escapeHtml(this.reportText || this.generateReport(this.currentData))}</pre>`;
-        mime = 'text/html';
-    } else if (type === 'csv') {
-        // produce a useful CSV: Character,UID,Slot,Stat,Value,WeaponLv,WeaponRank
-        const rows = [['Character','UID','Slot','Stat','Value','WeaponLv','WeaponRank']];
-        const avatars = this.currentData.avatarInfoList || [];
-        for (const av of avatars) {
-            const avatarId = av.avatarId ?? av.avatar_id ?? av.id;
-            const cname = this.getAvatarName(avatarId);
-            const equips = av.equipList || [];
-            for (const eq of equips) {
-                const flat = eq.flat || {};
-                const slot = flat.equipType || flat.pos || '';
-                if (flat.itemType === 'ITEM_RELIQUARY') {
-                    for (const sub of (flat.reliquarySubstats||[])) {
-                        const sName = LOC_DICT[sub.appendPropId] || sub.appendPropId || '';
-                        rows.push([cname, uid, slot, sName, sub.statValue, '', '']);
-                    }
-                } else if (flat.itemType === 'ITEM_WEAPON') {
-                    const wlv = this.safeGet(eq, 'weapon.level', '');
-                    const wrank = flat.rankLevel ?? flat.rank ?? '';
-                    const main = (flat.weaponStats && flat.weaponStats[0]) || {};
-                    const mName = LOC_DICT[main.appendPropId] || main.appendPropId || 'Main';
-                    rows.push([cname, uid, slot, mName, main.statValue ?? '', wlv, wrank]);
-                } else {
-                    rows.push([cname, uid, slot, flat.itemType||'', '', '', '']);
-                }
-            }
-        }
-        content = rows.map(r => r.map(c=>this.escapeCsvCell(c)).join(',')).join('\n');
-        mime = 'text/csv';
-    }
-
-    const blob = new Blob([content], {type: mime});
-    const a = document.createElement('a');
-    a.href = URL.createObjectURL(blob);
-    a.download = `GC_LOG_${uid}_${new Date().toISOString().slice(0,10)}.${ext}`;
-    a.click();
-    this.toast('エクスポート完了');
-}
-
-};
- (document.getElementById('runBtn')).addEventListener('click', ()=> App.run()); document.getElementById('copyBtn').addEventListener('click', ()=> App.copy()); Array.from(document.querySelectorAll('button.dl')).forEach(b => b.addEventListener('click', e => App.download(e.currentTarget.dataset.type)));
-
-// init App.init(); </script>
-
+document.getElementById('runBtn').addEventListener('click',()=>App.run());document.getElementById('copyBtn').addEventListener('click',()=>App.copy());document.getElementById('clearBtn').addEventListener('click',()=>App.clear());document.getElementById('uid').addEventListener('keydown',e=>{if(e.key==='Enter')App.run()});document.getElementById('charSearch').addEventListener('input',()=>App.renderChars());document.querySelectorAll('[data-type]').forEach(b=>b.addEventListener('click',()=>App.download(b.dataset.type)));App.init();
+</script>
 </body>
 </html>
