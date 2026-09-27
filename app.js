@@ -2,6 +2,7 @@
 const DB='./genshin_master_db.json',API='/api/uid',UID=/^\d{8,10}$/;
 const ASSET_ROOT='https://raw.githubusercontent.com/kgirtxd/Genshin-Assets/master',ENKA_UI='https://enka.network/ui/';
 const CHAR_ASSET_ALIAS={Qin:'jean',Ambor:'ambor',PlayerBoy:'playerboy',PlayerGirl:'playergirl'};
+const ELEMENT_ASSETS={Fire:{label:'炎',file:'Element_Pyro.png'},Water:{label:'水',file:'Element_Hydro.png'},Electric:{label:'雷',file:'Element_Electro.png'},Ice:{label:'氷',file:'Element_Cryo.png'},Dendro:{label:'草',file:'Element_Dendro.png'},Wind:{label:'風',file:'Element_Anemo.png'},Rock:{label:'岩',file:'Element_Geo.png'}};
 const FALLBACK={
 FIGHT_PROP_BASE_HP:'基礎HP',FIGHT_PROP_HP:'HP',FIGHT_PROP_HP_PERCENT:'HP%',
 FIGHT_PROP_BASE_ATTACK:'基礎攻撃力',FIGHT_PROP_ATTACK:'攻撃力',FIGHT_PROP_ATTACK_PERCENT:'攻撃力%',
@@ -39,11 +40,17 @@ getStats(c){
  return {hp:val('2000'),atk:val('2001'),def:val('2002'),em:val('28'),cr:this.pct(val('20')),cd:this.pct(val('22')),er:this.pct(val('23'))};
 },
 getElement(c){
- const id=c.avatarId??c.avatar_id??c.id;
- const n=this.name(id);
- const map=[['火','炎'],['水','水'],['雷','雷'],['氷','氷'],['草','草'],['風','風'],['岩','岩']];
- for(const [a,b] of map)if(n.includes(a))return b;
- return ['ナヒーダ','コレイ','ティナリ','アルハイゼン','ヨォーヨ','白朮','キィニチ','エミリエ','ムアラニ'].some(x=>n===x)?'草':'不明';
+ const id=String(c.avatarId??c.avatar_id??c.id);
+ const e=this.db[id]?.element;
+ return ELEMENT_ASSETS[e]?.label||'？？？';
+},
+elementImage(c){
+ const e=this.db[String(c.id)]?.element,asset=ELEMENT_ASSETS[e];
+ return asset?ASSET_ROOT+'/Elements/'+asset.file:'';
+},
+elementHtml(c){
+ const src=this.elementImage(c);
+ return src?'<img class="element-icon" src="'+this.esc(src)+'" alt="">' :'';
 },
 artifactScore(f){
  let score=0,subs=f?.reliquarySubstats||[];
@@ -87,7 +94,7 @@ async run(uidValue=el('uid').value.trim(),silent=false){
 build(){
  const a=this.data.avatarInfoList||[];
  this.chars=a.map(x=>{const id=x.avatarId??x.avatar_id??x.id;const stats=this.getStats(x);const arts=this.artifactData(x);return{
-  id,name:this.name(id),element:this.getElement(x),level:this.getLevel(x),fetter:this.getFetter(x),constellations:this.getConst(x),stats,arts,weapons:this.weaponData(x),asset:this.db[String(id)]||{},data:x
+  id,name:this.name(id),element:this.getElement(x),elementKey:this.db[String(id)]?.element||'',level:this.getLevel(x),fetter:this.getFetter(x),constellations:this.getConst(x),stats,arts,weapons:this.weaponData(x),asset:this.db[String(id)]||{},data:x
  }});
 },
 saveHistory(uid,d){
@@ -123,7 +130,7 @@ filtered(){
 },
 renderChars(){
  const a=this.filtered();el('charsCount').textContent=a.length+' / '+this.chars.length;
- el('chars').innerHTML=a.length ? a.map(c=>{const im=this.charImage(c);const tags=c.arts.slice(0,2).map(x=>'<span class="tag2">'+this.esc(x.main)+'</span>').join('');return `<article class="character-card" data-char="${c.id}"><div class="char-identity"><div class="char-image-wrap"><img class="char-avatar" src="${this.esc(im.src)}" data-fallback="${this.esc(im.fallback)}" onerror="this.onerror=null;this.src=this.dataset.fallback" alt=""></div><div class="char-top"><div><div class="char-name">${this.esc(c.name)}</div><div class="char-level">${this.esc(c.element)} · Lv.${c.level}</div></div><span class="pill">★${c.constellations}</span></div></div><div class="char-stats"><div class="char-stat"><b>${this.fmt(c.stats.cr)}%</b><span>会心率</span></div><div class="char-stat"><b>${this.fmt(c.stats.cd)}%</b><span>会心ダメ</span></div><div class="char-stat"><b>${this.fmt(c.stats.er)}%</b><span>チャージ</span></div></div><div class="char-tags">${tags}<span class="tag2">聖遺物 ${c.arts.length}/5</span></div></article>`;}).join('') : '<div class="empty">条件に一致するキャラクターがありません。</div>';
+ el('chars').innerHTML=a.length ? a.map(c=>{const im=this.charImage(c);const tags=c.arts.slice(0,2).map(x=>'<span class="tag2">'+this.esc(x.main)+'</span>').join('');return '<article class="character-card" data-char="'+c.id+'"><div class="char-identity"><div class="char-image-wrap"><img class="char-avatar" src="'+this.esc(im.src)+'" data-fallback="'+this.esc(im.fallback)+'" onerror="this.onerror=null;this.src=this.dataset.fallback" alt=""></div><div class="char-top"><div><div class="char-name">'+this.esc(c.name)+'</div><div class="char-level"><span class="element-label">'+this.elementHtml(c)+this.esc(c.element)+' · Lv.'+c.level+'</span></div></div><span class="pill">★'+c.constellations+'</span></div></div><div class="char-stats"><div class="char-stat"><b>'+this.fmt(c.stats.cr)+'%</b><span>会心率</span></div><div class="char-stat"><b>'+this.fmt(c.stats.cd)+'%</b><span>会心ダメ</span></div><div class="char-stat"><b>'+this.fmt(c.stats.er)+'%</b><span>チャージ</span></div></div><div class="char-tags">'+tags+'<span class="tag2">聖遺物 '+c.arts.length+'/5</span></div></article>';}).join('') : '<div class="empty">条件に一致するキャラクターがありません。</div>';
  el('chars').querySelectorAll('[data-char]').forEach(x=>x.onclick=()=>this.openChar(Number(x.dataset.char)));
 },
 openChar(id){
