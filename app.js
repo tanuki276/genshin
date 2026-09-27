@@ -1,5 +1,7 @@
 
 const DB='./genshin_master_db.json',API='/api/uid',UID=/^\d{8,10}$/;
+const ASSET_ROOT='https://raw.githubusercontent.com/kgirtxd/Genshin-Assets/master',ENKA_UI='https://enka.network/ui/';
+const CHAR_ASSET_ALIAS={Qin:'jean',Ambor:'ambor',PlayerBoy:'playerboy',PlayerGirl:'playergirl'};
 const FALLBACK={
 FIGHT_PROP_BASE_HP:'基礎HP',FIGHT_PROP_HP:'HP',FIGHT_PROP_HP_PERCENT:'HP%',
 FIGHT_PROP_BASE_ATTACK:'基礎攻撃力',FIGHT_PROP_ATTACK:'攻撃力',FIGHT_PROP_ATTACK_PERCENT:'攻撃力%',
@@ -20,6 +22,9 @@ toast(m){const x=el('toast');x.textContent=m;x.classList.add('show');clearTimeou
 get(o,p,f='-'){try{return p.split('.').reduce((a,k)=>a?.[k],o)??f}catch{return f}},
 name(id){const e=this.db[String(id)];if(typeof e==='string')return e;if(e&&typeof e==='object'){for(const k of ['name','Name','displayName','title']){if(typeof e[k]==='string')return e[k];if(e[k]&&typeof e[k]==='object')for(const l of ['ja','jp','ja-JP','ja_JP'])if(typeof e[k][l]==='string')return e[k][l]}}return 'Unknown (ID:'+id+')'},
 stat(id){return this.props[id]||FALLBACK[id]||id||'-'},
+assetSlug(sideIconName){const suffix=String(sideIconName||'').replace(/^UI_AvatarIcon_Side_/,'');if(!suffix)return '';if(CHAR_ASSET_ALIAS[suffix])return CHAR_ASSET_ALIAS[suffix];return suffix.replace(/([a-z0-9])([A-Z])/g,'$1_$2').replace(/[^A-Za-z0-9]+/g,'_').toLowerCase()},
+charImage(c,portrait=false){const side=c?.asset?.sideIconName||'';const slug=this.assetSlug(side);if(!slug)return {src:'',fallback:''};return {src:ASSET_ROOT+'/'+(portrait?'CharacterPortrait/':'CharacterIcon/')+slug+(portrait?'.png':'_icon.png'),fallback:ENKA_UI+side+'.png'}},
+itemImage(q){const icon=q?.flat?.icon;return icon?ENKA_UI+icon+'.png':''},
 esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')},
 num(v,d=0){const n=Number(v);return Number.isFinite(n)?n:d},
 pct(v){const n=this.num(v);return Math.abs(n)<=2?n*100:n},
@@ -49,7 +54,7 @@ artifactData(c){
  const arr=[];
  for(const q of c.equipList||[]){const f=q.flat||{};if(f.itemType==='ITEM_RELIQUARY'||f.reliquaryMainstat||f.reliquarySubstats){
    const main=f.reliquaryMainstat||{},subs=f.reliquarySubstats||[];
-   arr.push({slot:this.slot(f,q),set:f.setNameTextMapHash||'セット情報不明',level:this.get(q,'reliquary.level',this.get(q,'level',0)),rank:f.rankLevel||0,
+   arr.push({slot:this.slot(f,q),set:f.setNameTextMapHash||'セット情報不明',level:this.get(q,'reliquary.level',this.get(q,'level',0)),rank:f.rankLevel||0,icon:f.icon||'',
    main:this.stat(main.mainPropId||main.appendPropId)+' '+this.fmt(main.statValue),subs:subs.map(s=>this.stat(s.appendPropId)+' +'+this.fmt(s.statValue)),score:this.artifactScore(f),raw:q});
  }}
  return arr;
@@ -57,7 +62,7 @@ artifactData(c){
 weaponData(c){
  const arr=[];
  for(const q of c.equipList||[]){const f=q.flat||{};if(f.itemType==='ITEM_WEAPON'||f.weaponStats||q.weapon){
-   arr.push({name:f.nameTextMapHash||'装備武器',level:this.get(q,'weapon.level',this.get(q,'level',0)),rank:f.rankLevel||f.rank||0,stats:(f.weaponStats||[]).map(s=>this.stat(s.appendPropId)+' '+this.fmt(s.statValue)),raw:q});
+   arr.push({name:f.nameTextMapHash||'装備武器',level:this.get(q,'weapon.level',this.get(q,'level',0)),rank:f.rankLevel||f.rank||0,icon:f.icon||'',stats:(f.weaponStats||[]).map(s=>this.stat(s.appendPropId)+' '+this.fmt(s.statValue)),raw:q});
  }}
  return arr;
 },
@@ -75,14 +80,14 @@ async run(uidValue=el('uid').value.trim(),silent=false){
   let r;try{r=await fetch(API+'?uid='+encodeURIComponent(uidValue),{headers:{Accept:'application/json'},cache:'no-store',signal:c.signal})}finally{clearTimeout(tm)}
   let d={};try{d=await r.json()}catch{}
   if(!r.ok)throw Error(d.error||'HTTP '+r.status);if(!d.playerInfo)throw Error('公開プロフィールが見つかりません。');
-  this.data=d;this.build();this.saveHistory(uidValue,d);this.renderAll();this.status('解析完了 · '+this.chars.length+'キャラクター','ok');if(!silent)this.toast('解析完了');
+  this.data=d;this.build();this.saveHistory(uidValue,d);this.renderAll();this.status('解析完了 · '+this.chars.length+'キャラクター · 画像対応','ok');if(!silent)this.toast('解析完了');
  }catch(e){this.status(e.name==='AbortError'?'APIタイムアウト':e.message,'bad');if(!silent)this.toast('取得に失敗しました')}
  finally{this.busy=false;el('run').disabled=false}
 },
 build(){
  const a=this.data.avatarInfoList||[];
  this.chars=a.map(x=>{const id=x.avatarId??x.avatar_id??x.id;const stats=this.getStats(x);const arts=this.artifactData(x);return{
-  id,name:this.name(id),element:this.getElement(x),level:this.getLevel(x),fetter:this.getFetter(x),constellations:this.getConst(x),stats,arts,weapons:this.weaponData(x),data:x
+  id,name:this.name(id),element:this.getElement(x),level:this.getLevel(x),fetter:this.getFetter(x),constellations:this.getConst(x),stats,arts,weapons:this.weaponData(x),asset:this.db[String(id)]||{},data:x
  }});
 },
 saveHistory(uid,d){
@@ -118,13 +123,14 @@ filtered(){
 },
 renderChars(){
  const a=this.filtered();el('charsCount').textContent=a.length+' / '+this.chars.length;
- el('chars').innerHTML=a.length?a.map(c=>'<article class="character-card" data-char="'+c.id+'"><div class="char-top"><div><div class="char-name">'+this.esc(c.name)+'</div><div class="char-level">'+this.esc(c.element)+' · Lv.'+c.level+'</div></div><span class="pill">★'+c.constellations+'</span></div><div class="char-stats"><div class="char-stat"><b>'+this.fmt(c.stats.cr)+'%</b><span>会心率</span></div><div class="char-stat"><b>'+this.fmt(c.stats.cd)+'%</b><span>会心ダメ</span></div><div class="char-stat"><b>'+this.fmt(c.stats.er)+'%</b><span>チャージ</span></div></div><div class="char-tags">'+c.arts.slice(0,2).map(x=>'<span class="tag2">'+this.esc(x.main)+'</span>').join('')+'<span class="tag2">聖遺物 '+c.arts.length+'/5</span></div></article>').join(''):'<div class="empty">条件に一致するキャラクターがありません。</div>';
+ el('chars').innerHTML=a.length?a.map(c=>{const im=this.charImage(c);return '<article class="character-card" data-char="'+c.id+'"><div class="char-identity"><div class="char-image-wrap"><img class="char-avatar" src="'+this.esc(im.src)+'" data-fallback="'+this.esc(im.fallback)+'" onerror="this.onerror=null;this.src=this.dataset.fallback" alt=""></div><div class="char-top"><div><div class="char-name">'+this.esc(c.name)+'</div><div class="char-level">'+this.esc(c.element)+' · Lv.'+c.level+'</div></div><span class="pill">★'+c.constellations+'</span></div></div><div class="char-stats"><div class="char-stat"><b>'+this.fmt(c.stats.cr)+'%</b><span>会心率</span></div><div class="char-stat"><b>'+this.fmt(c.stats.cd)+'%</b><span>会心ダメ</span></div><div class="char-stat"><b>'+this.fmt(c.stats.er)+'%</b><span>チャージ</span></div></div><div class="char-tags">'+c.arts.slice(0,2).map(x=>'<span class="tag2">'+this.esc(x.main)+'</span>').join('')+'<span class="tag2">聖遺物 '+c.arts.length+'/5</span></div></article>').join(''):'<div class="empty">条件に一致するキャラクターがありません。</div>';
  el('chars').querySelectorAll('[data-char]').forEach(x=>x.onclick=()=>this.openChar(Number(x.dataset.char)));
 },
 openChar(id){
  const c=this.chars.find(x=>x.id==id);if(!c)return;this.selected=c;
  const rows=(o)=>Object.entries(o).map(([k,v])=>'<div class="kv"><span>'+k+'</span><b>'+this.fmt(v)+'</b></div>').join('');
- el('modalTitle').textContent=c.name+' · キャラクター詳細';el('modalBody').innerHTML='<div class="detail-grid"><div class="detail-box"><h4>基本情報</h4>'+rows({元素:c.element,レベル:c.level,好感度:c.fetter,命ノ星座:c.constellations})+'</div><div class="detail-box"><h4>戦闘ステータス</h4>'+rows({'HP':c.stats.hp,'攻撃力':c.stats.atk,'防御力':c.stats.def,'元素熟知':c.stats.em,'会心率':c.stats.cr+'%','会心ダメージ':c.stats.cd+'%','元素チャージ':c.stats.er+'%'})+'</div></div><div style="height:10px"></div><div class="detail-box"><h4>武器</h4>'+ (c.weapons.length?c.weapons.map(w=>'<div class="kv"><span>'+this.esc(String(w.name))+' · Lv.'+w.level+'</span><b>精錬 '+w.rank+'</b></div>'+w.stats.map(s=>'<div class="muted" style="padding:2px 0">'+this.esc(s)+'</div>').join('')).join(''):'<div class="empty">公開武器なし</div>')+'</div><div style="height:10px"></div><div class="detail-box"><h4>聖遺物 · 簡易評価</h4><div class="artifacts">'+(c.arts.length?c.arts.map(x=>'<div class="artifact-row"><div class="artifact-slot">'+this.esc(x.slot)+'</div><div><div class="artifact-set">'+this.esc(String(x.set))+'</div><div class="substats">'+x.subs.map(s=>'<span class="substat">'+this.esc(s)+'</span>').join('')+'</div></div><div class="cv">Score '+x.score+'</div></div>').join(''):'<div class="empty">公開聖遺物なし</div>')+'</div></div>';
+ const cim=this.charImage(c,true);
+ el('modalTitle').textContent=c.name+' · キャラクター詳細';el('modalBody').innerHTML='<div class="character-hero"><div class="portrait-wrap"><img class="char-portrait" src="'+this.esc(cim.src)+'" data-fallback="'+this.esc(cim.fallback)+'" onerror="this.onerror=null;this.src=this.dataset.fallback" alt=""></div><div><div class="hero-character-name">'+this.esc(c.name)+'</div><div class="muted">'+this.esc(c.element)+' · Lv.'+c.level+' · 命ノ星座 '+c.constellations+'</div></div></div><div style="height:10px"></div><div class="detail-grid"><div class="detail-box"><h4>基本情報</h4>'+rows({元素:c.element,レベル:c.level,好感度:c.fetter,命ノ星座:c.constellations})+'</div><div class="detail-box"><h4>戦闘ステータス</h4>'+rows({'HP':c.stats.hp,'攻撃力':c.stats.atk,'防御力':c.stats.def,'元素熟知':c.stats.em,'会心率':c.stats.cr+'%','会心ダメージ':c.stats.cd+'%','元素チャージ':c.stats.er+'%'})+'</div></div><div style="height:10px"></div><div class="detail-box"><h4>武器</h4>'+ (c.weapons.length?c.weapons.map(w=>{const im=this.itemImage(w.raw);return '<div class="equipment-row"><div class="equipment-image">'+(im?'<img src="'+this.esc(im)+'" alt="" loading="lazy">':'')+'</div><div><div class="kv"><span>'+this.esc(String(w.name))+' · Lv.'+w.level+'</span><b>精錬 '+w.rank+'</b></div>'+w.stats.map(s=>'<div class="muted" style="padding:2px 0">'+this.esc(s)+'</div>').join('')+'</div></div>'}).join(''):'<div class="empty">公開武器なし</div>')+'</div><div style="height:10px"></div><div class="detail-box"><h4>聖遺物 · 簡易評価</h4><div class="artifacts">'+(c.arts.length?c.arts.map(x=>'<div class="artifact-row">'+(x.icon?'<div class="artifact-image"><img src="'+this.esc(ENKA_UI+x.icon+'.png')+'" alt="" loading="lazy"></div>':'<div class="artifact-image"></div>')+'<div class="artifact-slot">'+this.esc(x.slot)+'</div><div><div class="artifact-set">'+this.esc(String(x.set))+'</div><div class="substats">'+x.subs.map(s=>'<span class="substat">'+this.esc(s)+'</span>').join('')+'</div></div><div class="cv">Score '+x.score+'</div></div>').join(''):'<div class="empty">公開聖遺物なし</div>')+'</div></div>';
  el('modal').classList.add('show');
 },
 renderCompare(){
