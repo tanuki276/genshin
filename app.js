@@ -107,10 +107,27 @@ renderHistory(){
  box.querySelectorAll('[data-h]').forEach(b=>b.onclick=()=>this.run(b.dataset.h));
 },
 renderAll(){this.renderHeader();this.renderDashboard();this.renderChars();this.renderCompare();this.renderRaw()},
+theaterText(p){
+ const act=Number(p?.theaterActIndex),stars=Number(p?.theaterStarIndex),mode=Number(p?.theaterModeIndex);
+ if(!Number.isFinite(act)||act<=0)return '未挑戦';
+ const parts=['第'+act+'幕'];
+ if(Number.isFinite(stars))parts.push(stars+'★');
+ if(Number.isFinite(mode))parts.push('モード '+mode);
+ return parts.join(' · ');
+},
+stygianText(p){
+ const diff=Number(p?.stygianIndex),seconds=Number(p?.stygianSeconds);
+ if(!Number.isFinite(diff))return '未挑戦';
+ const parts=['難易度 '+diff];
+ if(Number.isFinite(seconds))parts.push(seconds+'秒');
+ return parts.join(' · ');
+},
 renderHeader(){
  const p=this.data.playerInfo||{},a=this.chars;
  el('name').textContent=p.nickname||'-';el('ar').textContent=p.level??'-';el('wl').textContent=p.worldLevel??'-';el('count').textContent=a.length;
- el('ach').textContent=p.finishAchievementNum??'-';el('abyss').textContent=(p.towerFloorIndex&&p.towerLevelIndex)?p.towerFloorIndex+'-'+p.towerLevelIndex:'-';el('signature').textContent=p.signature||'—';el('last').textContent=new Date().toLocaleString('ja-JP');
+ el('ach').textContent=p.finishAchievementNum??'-';el('abyss').textContent=(p.towerFloorIndex&&p.towerLevelIndex)?p.towerFloorIndex+'-'+p.towerLevelIndex:'-';
+ el('theater').textContent=this.theaterText(p);el('stygian').textContent=this.stygianText(p);
+ el('signature').textContent=p.signature||'—';el('last').textContent=new Date().toLocaleString('ja-JP');
 },
 renderDashboard(){
  const a=this.chars,p=this.data.playerInfo||{},withArts=a.filter(x=>x.arts.length),score=a.flatMap(x=>x.arts).map(x=>x.score);
