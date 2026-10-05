@@ -1,7 +1,7 @@
 
 const DB='./genshin_master_db.json',API='/api/uid',UID=/^\d{8,10}$/;
 const ASSET_ROOT='https://raw.githubusercontent.com/kgirtxd/Genshin-Assets/master',ENKA_UI='https://enka.network/ui/';
-const CHAR_ASSET_ALIAS={Qin:'jean',Ambor:'ambor',PlayerBoy:'playerboy',PlayerGirl:'playergirl'};
+const CHAR_ASSET_ALIAS={Qin:'jean',Ambor:'amber',Feiyan:'yanfei',Liuyun:'xianyun',Momoka:'kirara',Liney:'lyney',Alhatham:'alhaitham',Baizhuer:'baizhu',SkirkNew:'skirk',Yae:'yae-miko',Yunjin:'yun-jin',PlayerBoy:'traveler-anemo',PlayerGirl:'traveler-anemo'};
 const ELEMENT_ASSETS={Fire:{label:'炎',file:'Element_Pyro.png'},Water:{label:'水',file:'Element_Hydro.png'},Electric:{label:'雷',file:'Element_Electro.png'},Ice:{label:'氷',file:'Element_Cryo.png'},Dendro:{label:'草',file:'Element_Dendro.png'},Wind:{label:'風',file:'Element_Anemo.png'},Rock:{label:'岩',file:'Element_Geo.png'}};
 const FALLBACK={
 FIGHT_PROP_BASE_HP:'基礎HP',FIGHT_PROP_HP:'HP',FIGHT_PROP_HP_PERCENT:'HP%',
@@ -16,15 +16,15 @@ FIGHT_PROP_WIND_ADD_HURT:'風元素ダメージ',FIGHT_PROP_ROCK_ADD_HURT:'岩�
 const EQUIP={EQUIP_BRACER:'生の花',EQUIP_NECKLACE:'死の羽',EQUIP_SHOES:'時の砂',EQUIP_RING:'空の杯',EQUIP_DRESS:'理の冠',EQUIP_WEAPON:'武器'};
 const el=id=>document.getElementById(id);
 const App={
-db:{},props:{...FALLBACK},equip:{...EQUIP},data:null,chars:[],history:[],
+db:{},enkaChars:{},locJa:{},props:{...FALLBACK},equip:{...EQUIP},data:null,chars:[],history:[],
 busy:false,selected:null,filter:{q:'',element:'all',sort:'level'},
 status(m,c=''){el('status').textContent=m;el('dot').className='dot '+c},
 toast(m){const x=el('toast');x.textContent=m;x.classList.add('show');clearTimeout(this._toast);this._toast=setTimeout(()=>x.classList.remove('show'),2200)},
 get(o,p,f='-'){try{return p.split('.').reduce((a,k)=>a?.[k],o)??f}catch{return f}},
-name(id){const e=this.db[String(id)];if(typeof e==='string')return e;if(e&&typeof e==='object'){for(const k of ['name','Name','displayName','title']){if(typeof e[k]==='string')return e[k];if(e[k]&&typeof e[k]==='object')for(const l of ['ja','jp','ja-JP','ja_JP'])if(typeof e[k][l]==='string')return e[k][l]}}return 'Unknown (ID:'+id+')'},
+name(id){const dyn=this.enkaChars[String(id)]||{},hash=dyn.NameTextMapHash!=null?String(dyn.NameTextMapHash):'',localized=this.locJa[hash];if(localized)return localized;const e=this.db[String(id)];if(typeof e==='string')return e;if(e&&typeof e==='object'){for(const k of ['name','Name','displayName','title']){if(typeof e[k]==='string')return e[k];if(e[k]&&typeof e[k]==='object')for(const l of ['ja','jp','ja-JP','ja_JP'])if(typeof e[k][l]==='string')return e[k][l]}}return 'Unknown (ID:'+id+')'},
 stat(id){return this.props[id]||FALLBACK[id]||id||'-'},
-assetSlug(sideIconName){const suffix=String(sideIconName||'').replace(/^UI_AvatarIcon_Side_/,'');if(!suffix)return '';if(CHAR_ASSET_ALIAS[suffix])return CHAR_ASSET_ALIAS[suffix];return suffix.replace(/([a-z0-9])([A-Z])/g,'$1_$2').replace(/[^A-Za-z0-9]+/g,'_').toLowerCase()},
-charImage(c,portrait=false){const side=c?.asset?.sideIconName||'';const slug=this.assetSlug(side);if(!slug)return {src:'',fallback:''};return {src:ASSET_ROOT+'/'+(portrait?'CharacterPortrait/':'CharacterIcon/')+slug+(portrait?'.png':'_icon.png'),fallback:ENKA_UI+side+'.png'}},
+assetSlug(sideIconName){const suffix=String(sideIconName||'').replace(/^UI_AvatarIcon_Side_/,'');if(!suffix)return '';if(CHAR_ASSET_ALIAS[suffix])return CHAR_ASSET_ALIAS[suffix];return suffix.replace(/([a-z0-9])([A-Z])/g,'$1-$2').replace(/_/g,'-').replace(/[^A-Za-z0-9-]+/g,'-').toLowerCase()},
+devSlug(c){const side=c?.asset?.SideIconName||c?.asset?.sideIconName||'';const suffix=String(side).replace(/^UI_AvatarIcon_Side_/,'');return CHAR_ASSET_ALIAS[suffix]||suffix.replace(/([a-z0-9])([A-Z])/g,'$1-$2').replace(/_/g,'-').replace(/[^A-Za-z0-9-]+/g,'-').toLowerCase()},charImage(c,portrait=false){const asset=c?.asset||{},side=asset.SideIconName||asset.sideIconName||'',slug=this.devSlug(c),urls=[];if(slug)urls.push(GENSHIN_DEV+'/characters/'+encodeURIComponent(slug)+'/'+(portrait?'portrait':'icon'));if(side)urls.push(ENKA_UI+String(side).replace('_Side','')+'.png');const oldSlug=this.assetSlug(side);if(oldSlug)urls.push(ASSET_ROOT+'/'+(portrait?'CharacterPortrait/':'CharacterIcon/')+oldSlug+(portrait?'.png':'_icon.png'));return {src:urls[0]||'',fallbacks:urls.slice(1)}},imageAttrs(im){return 'src="'+this.esc(im?.src||'')+'" data-images="'+this.esc(JSON.stringify(im?.fallbacks||[]))+'" onerror="App.imageError(this)"'},imageError(img){try{const urls=JSON.parse(img.dataset.images||'[]'),i=Number(img.dataset.imageIndex||0)+1;if(i>=urls.length){img.removeAttribute('src');img.classList.add('is-missing');return}img.dataset.imageIndex=String(i);img.src=urls[i]}catch{img.removeAttribute('src')}},assetFor(id){return {...(this.db[String(id)]||{}),...(this.enkaChars[String(id)]||{})}},
 itemImage(q){const icon=q?.flat?.icon;return icon?ENKA_UI+icon+'.png':''},
 esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')},
 num(v,d=0){const n=Number(v);return Number.isFinite(n)?n:d},
@@ -41,11 +41,11 @@ getStats(c){
 },
 getElement(c){
  const id=String(c.avatarId??c.avatar_id??c.id);
- const e=this.db[id]?.element;
+ const asset=this.assetFor(id),e=asset.Element||asset.element;
  return ELEMENT_ASSETS[e]?.label||'？？？';
 },
 elementImage(c){
- const e=this.db[String(c.id)]?.element,asset=ELEMENT_ASSETS[e];
+ const a=this.assetFor(c.id),e=a.Element||a.element,asset=ELEMENT_ASSETS[e];
  return asset?ASSET_ROOT+'/Elements/'+asset.file:'';
 },
 elementHtml(c){
@@ -87,14 +87,14 @@ async run(uidValue=el('uid').value.trim(),silent=false){
   let r;try{r=await fetch(API+'?uid='+encodeURIComponent(uidValue),{headers:{Accept:'application/json'},cache:'no-store',signal:c.signal})}finally{clearTimeout(tm)}
   let d={};try{d=await r.json()}catch{}
   if(!r.ok)throw Error(d.error||'HTTP '+r.status);if(!d.playerInfo)throw Error('公開プロフィールが見つかりません。');
-  this.data=d;this.build();this.saveHistory(uidValue,d);this.renderAll();this.status('解析完了 · '+this.chars.length+'キャラクター · 画像対応','ok');if(!silent)this.toast('解析完了');
+  const ids=(d.avatarInfoList||[]).map(x=>String(x.avatarId??x.avatar_id??x.id)).filter(Boolean);try{const mr=await fetch(CHAR_API+'?ids='+encodeURIComponent(ids.join(',')),{cache:'no-store'}),mj=await mr.json();this.enkaChars=mj.enkaCharacters||{};this.locJa=mj.locJa||{};}catch(e){this.enkaChars={};this.locJa={};}this.data=d;this.build();this.saveHistory(uidValue,d);this.renderAll();this.status('解析完了 · '+this.chars.length+'キャラクター · 画像対応','ok');if(!silent)this.toast('解析完了');
  }catch(e){this.status(e.name==='AbortError'?'APIタイムアウト':e.message,'bad');if(!silent)this.toast('取得に失敗しました')}
  finally{this.busy=false;el('run').disabled=false}
 },
 build(){
  const a=this.data.avatarInfoList||[];
  this.chars=a.map(x=>{const id=x.avatarId??x.avatar_id??x.id;const stats=this.getStats(x);const arts=this.artifactData(x);return{
-  id,name:this.name(id),element:this.getElement(x),elementKey:this.db[String(id)]?.element||'',level:this.getLevel(x),fetter:this.getFetter(x),constellations:this.getConst(x),stats,arts,weapons:this.weaponData(x),asset:this.db[String(id)]||{},data:x
+  id,name:this.name(id),element:this.getElement(x),elementKey:this.db[String(id)]?.element||'',level:this.getLevel(x),fetter:this.getFetter(x),constellations:this.getConst(x),stats,arts,weapons:this.weaponData(x),asset:this.assetFor(id),data:x
  }});
 },
 saveHistory(uid,d){
@@ -130,14 +130,14 @@ filtered(){
 },
 renderChars(){
  const a=this.filtered();el('charsCount').textContent=a.length+' / '+this.chars.length;
- el('chars').innerHTML=a.length ? a.map(c=>{const im=this.charImage(c);const tags=c.arts.slice(0,2).map(x=>'<span class="tag2">'+this.esc(x.main)+'</span>').join('');return '<article class="character-card" data-char="'+c.id+'"><div class="char-identity"><div class="char-image-wrap"><img class="char-avatar" src="'+this.esc(im.src)+'" data-fallback="'+this.esc(im.fallback)+'" onerror="this.onerror=null;this.src=this.dataset.fallback" alt=""></div><div class="char-top"><div><div class="char-name">'+this.esc(c.name)+'</div><div class="char-level"><span class="element-label">'+this.elementHtml(c)+this.esc(c.element)+' · Lv.'+c.level+'</span></div></div><span class="pill">★'+c.constellations+'</span></div></div><div class="char-stats"><div class="char-stat"><b>'+this.fmt(c.stats.cr)+'%</b><span>会心率</span></div><div class="char-stat"><b>'+this.fmt(c.stats.cd)+'%</b><span>会心ダメ</span></div><div class="char-stat"><b>'+this.fmt(c.stats.er)+'%</b><span>チャージ</span></div></div><div class="char-tags">'+tags+'<span class="tag2">聖遺物 '+c.arts.length+'/5</span></div></article>';}).join('') : '<div class="empty">条件に一致するキャラクターがありません。</div>';
+ el('chars').innerHTML=a.length ? a.map(c=>{const im=this.charImage(c);const tags=c.arts.slice(0,2).map(x=>'<span class="tag2">'+this.esc(x.main)+'</span>').join('');return '<article class="character-card" data-char="'+c.id+'"><div class="char-identity"><div class="char-image-wrap"><img class="char-avatar" src="'+this.esc(im.src)+'" data-images="'+this.esc(JSON.stringify(im.fallbacks||[]))+'" onerror="App.imageError(this)" alt=""></div><div class="char-top"><div><div class="char-name">'+this.esc(c.name)+'</div><div class="char-level"><span class="element-label">'+this.elementHtml(c)+this.esc(c.element)+' · Lv.'+c.level+'</span></div></div><span class="pill">★'+c.constellations+'</span></div></div><div class="char-stats"><div class="char-stat"><b>'+this.fmt(c.stats.cr)+'%</b><span>会心率</span></div><div class="char-stat"><b>'+this.fmt(c.stats.cd)+'%</b><span>会心ダメ</span></div><div class="char-stat"><b>'+this.fmt(c.stats.er)+'%</b><span>チャージ</span></div></div><div class="char-tags">'+tags+'<span class="tag2">聖遺物 '+c.arts.length+'/5</span></div></article>';}).join('') : '<div class="empty">条件に一致するキャラクターがありません。</div>';
  el('chars').querySelectorAll('[data-char]').forEach(x=>x.onclick=()=>this.openChar(Number(x.dataset.char)));
 },
 openChar(id){
  const c=this.chars.find(x=>x.id==id);if(!c)return;this.selected=c;
  const rows=(o)=>Object.entries(o).map(([k,v])=>'<div class="kv"><span>'+k+'</span><b>'+this.fmt(v)+'</b></div>').join('');
  const cim=this.charImage(c,true);
- el('modalTitle').textContent=c.name+' · キャラクター詳細';el('modalBody').innerHTML='<div class="character-hero"><div class="portrait-wrap"><img class="char-portrait" src="'+this.esc(cim.src)+'" data-fallback="'+this.esc(cim.fallback)+'" onerror="this.onerror=null;this.src=this.dataset.fallback" alt=""></div><div><div class="hero-character-name">'+this.esc(c.name)+'</div><div class="muted">'+this.esc(c.element)+' · Lv.'+c.level+' · 命ノ星座 '+c.constellations+'</div></div></div><div style="height:10px"></div><div class="detail-grid"><div class="detail-box"><h4>基本情報</h4>'+rows({元素:c.element,レベル:c.level,好感度:c.fetter,命ノ星座:c.constellations})+'</div><div class="detail-box"><h4>戦闘ステータス</h4>'+rows({'HP':c.stats.hp,'攻撃力':c.stats.atk,'防御力':c.stats.def,'元素熟知':c.stats.em,'会心率':c.stats.cr+'%','会心ダメージ':c.stats.cd+'%','元素チャージ':c.stats.er+'%'})+'</div></div><div style="height:10px"></div><div class="detail-box"><h4>武器</h4>'+ (c.weapons.length?c.weapons.map(w=>{const im=this.itemImage(w.raw);return '<div class="equipment-row"><div class="equipment-image">'+(im?'<img src="'+this.esc(im)+'" alt="" loading="lazy">':'')+'</div><div><div class="kv"><span>'+this.esc(String(w.name))+' · Lv.'+w.level+'</span><b>精錬 '+w.rank+'</b></div>'+w.stats.map(s=>'<div class="muted" style="padding:2px 0">'+this.esc(s)+'</div>').join('')+'</div></div>'}).join(''):'<div class="empty">公開武器なし</div>')+'</div><div style="height:10px"></div><div class="detail-box"><h4>聖遺物 · 簡易評価</h4><div class="artifacts">'+(c.arts.length?c.arts.map(x=>'<div class="artifact-row">'+(x.icon?'<div class="artifact-image"><img src="'+this.esc(ENKA_UI+x.icon+'.png')+'" alt="" loading="lazy"></div>':'<div class="artifact-image"></div>')+'<div class="artifact-slot">'+this.esc(x.slot)+'</div><div><div class="artifact-set">'+this.esc(String(x.set))+'</div><div class="substats">'+x.subs.map(s=>'<span class="substat">'+this.esc(s)+'</span>').join('')+'</div></div><div class="cv">Score '+x.score+'</div></div>').join(''):'<div class="empty">公開聖遺物なし</div>')+'</div></div>';
+ el('modalTitle').textContent=c.name+' · キャラクター詳細';el('modalBody').innerHTML='<div class="character-hero"><div class="portrait-wrap"><img class="char-portrait" src="'+this.esc(cim.src)+'" data-images="'+this.esc(JSON.stringify(cim.fallbacks||[]))+'" onerror="App.imageError(this)" alt=""></div><div><div class="hero-character-name">'+this.esc(c.name)+'</div><div class="muted">'+this.esc(c.element)+' · Lv.'+c.level+' · 命ノ星座 '+c.constellations+'</div></div></div><div style="height:10px"></div><div class="detail-grid"><div class="detail-box"><h4>基本情報</h4>'+rows({元素:c.element,レベル:c.level,好感度:c.fetter,命ノ星座:c.constellations})+'</div><div class="detail-box"><h4>戦闘ステータス</h4>'+rows({'HP':c.stats.hp,'攻撃力':c.stats.atk,'防御力':c.stats.def,'元素熟知':c.stats.em,'会心率':c.stats.cr+'%','会心ダメージ':c.stats.cd+'%','元素チャージ':c.stats.er+'%'})+'</div></div><div style="height:10px"></div><div class="detail-box"><h4>武器</h4>'+ (c.weapons.length?c.weapons.map(w=>{const im=this.itemImage(w.raw);return '<div class="equipment-row"><div class="equipment-image">'+(im?'<img src="'+this.esc(im)+'" alt="" loading="lazy">':'')+'</div><div><div class="kv"><span>'+this.esc(String(w.name))+' · Lv.'+w.level+'</span><b>精錬 '+w.rank+'</b></div>'+w.stats.map(s=>'<div class="muted" style="padding:2px 0">'+this.esc(s)+'</div>').join('')+'</div></div>'}).join(''):'<div class="empty">公開武器なし</div>')+'</div><div style="height:10px"></div><div class="detail-box"><h4>聖遺物 · 簡易評価</h4><div class="artifacts">'+(c.arts.length?c.arts.map(x=>'<div class="artifact-row">'+(x.icon?'<div class="artifact-image"><img src="'+this.esc(ENKA_UI+x.icon+'.png')+'" alt="" loading="lazy"></div>':'<div class="artifact-image"></div>')+'<div class="artifact-slot">'+this.esc(x.slot)+'</div><div><div class="artifact-set">'+this.esc(String(x.set))+'</div><div class="substats">'+x.subs.map(s=>'<span class="substat">'+this.esc(s)+'</span>').join('')+'</div></div><div class="cv">Score '+x.score+'</div></div>').join(''):'<div class="empty">公開聖遺物なし</div>')+'</div></div>';
  el('modal').classList.add('show');
 },
 renderCompare(){
