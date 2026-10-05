@@ -1,6 +1,6 @@
 
 const DB='./genshin_master_db.json',API='/api/uid',UID=/^\d{8,10}$/;
-const ASSET_ROOT='https://raw.githubusercontent.com/kgirtxd/Genshin-Assets/master',ENKA_UI='https://enka.network/ui/';
+const ASSET_ROOT='https://raw.githubusercontent.com/kgirtxd/Genshin-Assets/master',ENKA_UI='https://enka.network/ui/',GENSHIN_DEV='https://genshin.jmp.blue';
 const CHAR_ASSET_ALIAS={Qin:'jean',Ambor:'amber',Feiyan:'yanfei',Liuyun:'xianyun',Momoka:'kirara',Liney:'lyney',Alhatham:'alhaitham',Baizhuer:'baizhu',SkirkNew:'skirk',Yae:'yae-miko',Yunjin:'yun-jin',PlayerBoy:'traveler-anemo',PlayerGirl:'traveler-anemo'};
 const ELEMENT_ASSETS={Fire:{label:'炎',file:'Element_Pyro.png'},Water:{label:'水',file:'Element_Hydro.png'},Electric:{label:'雷',file:'Element_Electro.png'},Ice:{label:'氷',file:'Element_Cryo.png'},Dendro:{label:'草',file:'Element_Dendro.png'},Wind:{label:'風',file:'Element_Anemo.png'},Rock:{label:'岩',file:'Element_Geo.png'}};
 const FALLBACK={
@@ -94,7 +94,7 @@ async run(uidValue=el('uid').value.trim(),silent=false){
 build(){
  const a=this.data.avatarInfoList||[];
  this.chars=a.map(x=>{const id=x.avatarId??x.avatar_id??x.id;const stats=this.getStats(x);const arts=this.artifactData(x);return{
-  id,name:this.name(id),element:this.getElement(x),elementKey:this.db[String(id)]?.element||'',level:this.getLevel(x),fetter:this.getFetter(x),constellations:this.getConst(x),stats,arts,weapons:this.weaponData(x),asset:this.assetFor(id),data:x
+  id,name:this.name(id),element:this.getElement(x),elementKey:this.assetFor(id).Element||this.assetFor(id).element||'',level:this.getLevel(x),fetter:this.getFetter(x),constellations:this.getConst(x),stats,arts,weapons:this.weaponData(x),asset:this.assetFor(id),data:x
  }});
 },
 saveHistory(uid,d){
@@ -171,7 +171,7 @@ download(type){
  else {const rows=[['Character','Element','Level','Constellation','Crit Rate','Crit DMG','ER','Artifact Count','Artifact Score']];for(const c of this.chars)rows.push([c.name,c.element,c.level,c.constellations,c.stats.cr,c.stats.cd,c.stats.er,c.arts.length,c.arts.reduce((s,a)=>s+a.score,0)]);const q=s=>{s=String(s??'');return /[",\\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s};content='\\ufeff'+rows.map(r=>r.map(q).join(',')).join('\\n');mime='text/csv';ext='csv'}
  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([content],{type:mime}));a.download='genshin_'+uid+'_'+new Date().toISOString().slice(0,10)+'.'+ext;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);this.toast('書き出しました');
 },
-clear(){this.data=null;this.chars=[];this.selected=null;['name','ar','wl','count','ach','abyss','signature','last'].forEach(x=>el(x).textContent='-');el('dash').innerHTML='<div class="empty">UIDを解析するとダッシュボードが表示されます。</div>';el('chars').innerHTML='<div class="empty">UIDを解析してください。</div>';el('compare').innerHTML='<div class="empty">UIDを解析してください。</div>';el('raw').textContent='UIDを解析するとRaw JSONが表示されます。';this.status('入力待ち');},
+clear(){this.data=null;this.chars=[];this.selected=null;['name','ar','wl','count','ach','abyss','theater','stygian','signature','last'].forEach(x=>el(x).textContent='-');el('dash').innerHTML='<div class="empty">UIDを解析するとダッシュボードが表示されます。</div>';el('chars').innerHTML='<div class="empty">UIDを解析してください。</div>';el('compare').innerHTML='<div class="empty">UIDを解析してください。</div>';el('raw').textContent='UIDを解析するとRaw JSONが表示されます。';this.status('入力待ち');},
 copyRaw(){if(!this.data)return this.toast('コピーするデータがありません');navigator.clipboard?.writeText(JSON.stringify(this.data,null,2)).then(()=>this.toast('Raw JSONをコピーしました')).catch(()=>this.toast('コピーできませんでした'))}
 };
 function setTab(id){document.querySelectorAll('.tab').forEach(x=>x.classList.toggle('active',x.dataset.tab===id));document.querySelectorAll('.view').forEach(x=>x.classList.toggle('active',x.id==='view-'+id));}
