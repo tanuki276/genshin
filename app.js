@@ -1,5 +1,5 @@
 
-const DB='./genshin_master_db.json',API='/api/uid',UID=/^\d{8,10}$/;
+const DB='./genshin_master_db.json',API='/api/uid',CHAR_API='/api/characters',UID=/^\d{8,10}$/;
 const ASSET_ROOT='https://raw.githubusercontent.com/kgirtxd/Genshin-Assets/master',ENKA_UI='https://enka.network/ui/',GENSHIN_DEV='https://genshin.jmp.blue';
 const CHAR_ASSET_ALIAS={Qin:'jean',Ambor:'amber',Feiyan:'yanfei',Liuyun:'xianyun',Momoka:'kirara',Liney:'lyney',Alhatham:'alhaitham',Baizhuer:'baizhu',SkirkNew:'skirk',Yae:'yae-miko',Yunjin:'yun-jin',PlayerBoy:'traveler-anemo',PlayerGirl:'traveler-anemo'};
 const ELEMENT_ASSETS={Fire:{label:'炎',file:'Element_Pyro.png'},Water:{label:'水',file:'Element_Hydro.png'},Electric:{label:'雷',file:'Element_Electro.png'},Ice:{label:'氷',file:'Element_Cryo.png'},Dendro:{label:'草',file:'Element_Dendro.png'},Wind:{label:'風',file:'Element_Anemo.png'},Rock:{label:'岩',file:'Element_Geo.png'}};
@@ -24,7 +24,7 @@ get(o,p,f='-'){try{return p.split('.').reduce((a,k)=>a?.[k],o)??f}catch{return f
 name(id){const dyn=this.enkaChars[String(id)]||{},hash=dyn.NameTextMapHash!=null?String(dyn.NameTextMapHash):'',localized=this.locJa[hash];if(localized)return localized;const e=this.db[String(id)];if(typeof e==='string')return e;if(e&&typeof e==='object'){for(const k of ['name','Name','displayName','title']){if(typeof e[k]==='string')return e[k];if(e[k]&&typeof e[k]==='object')for(const l of ['ja','jp','ja-JP','ja_JP'])if(typeof e[k][l]==='string')return e[k][l]}}return 'Unknown (ID:'+id+')'},
 stat(id){return this.props[id]||FALLBACK[id]||id||'-'},
 assetSlug(sideIconName){const suffix=String(sideIconName||'').replace(/^UI_AvatarIcon_Side_/,'');if(!suffix)return '';if(CHAR_ASSET_ALIAS[suffix])return CHAR_ASSET_ALIAS[suffix];return suffix.replace(/([a-z0-9])([A-Z])/g,'$1-$2').replace(/_/g,'-').replace(/[^A-Za-z0-9-]+/g,'-').toLowerCase()},
-devSlug(c){const side=c?.asset?.SideIconName||c?.asset?.sideIconName||'';const suffix=String(side).replace(/^UI_AvatarIcon_Side_/,'');return CHAR_ASSET_ALIAS[suffix]||suffix.replace(/([a-z0-9])([A-Z])/g,'$1-$2').replace(/_/g,'-').replace(/[^A-Za-z0-9-]+/g,'-').toLowerCase()},charImage(c,portrait=false){const asset=c?.asset||{},side=asset.SideIconName||asset.sideIconName||'',slug=this.devSlug(c),urls=[];if(slug)urls.push(GENSHIN_DEV+'/characters/'+encodeURIComponent(slug)+'/'+(portrait?'portrait':'icon'));if(side)urls.push(ENKA_UI+String(side).replace('_Side','')+'.png');const oldSlug=this.assetSlug(side);if(oldSlug)urls.push(ASSET_ROOT+'/'+(portrait?'CharacterPortrait/':'CharacterIcon/')+oldSlug+(portrait?'.png':'_icon.png'));return {src:urls[0]||'',fallbacks:urls.slice(1)}},imageAttrs(im){return 'src="'+this.esc(im?.src||'')+'" data-images="'+this.esc(JSON.stringify(im?.fallbacks||[]))+'" onerror="App.imageError(this)"'},imageError(img){try{const urls=JSON.parse(img.dataset.images||'[]'),i=Number(img.dataset.imageIndex||0)+1;if(i>=urls.length){img.removeAttribute('src');img.classList.add('is-missing');return}img.dataset.imageIndex=String(i);img.src=urls[i]}catch{img.removeAttribute('src')}},assetFor(id){return {...(this.db[String(id)]||{}),...(this.enkaChars[String(id)]||{})}},
+devSlug(c){const side=c?.asset?.SideIconName||c?.asset?.sideIconName||'';const suffix=String(side).replace(/^UI_AvatarIcon_Side_/,'');return CHAR_ASSET_ALIAS[suffix]||suffix.replace(/([a-z0-9])([A-Z])/g,'$1-$2').replace(/_/g,'-').replace(/[^A-Za-z0-9-]+/g,'-').toLowerCase()},charImage(c,portrait=false){const asset=c?.asset||{},side=asset.SideIconName||asset.sideIconName||'',slug=this.devSlug(c),urls=[];if(slug)urls.push(GENSHIN_DEV+'/characters/'+encodeURIComponent(slug)+'/'+(portrait?'portrait':'icon'));if(side)urls.push(ENKA_UI+String(side).replace('_Side','')+'.png');const oldSlug=this.assetSlug(side);if(oldSlug)urls.push(ASSET_ROOT+'/'+(portrait?'CharacterPortrait/':'CharacterIcon/')+oldSlug+(portrait?'.png':'_icon.png'));return {src:urls[0]||'',fallbacks:urls.slice(1)}},imageAttrs(im){return 'src="'+this.esc(im?.src||'')+'" data-images="'+this.esc(JSON.stringify(im?.fallbacks||[]))+'" onerror="App.imageError(this)"'},imageError(img){try{const urls=JSON.parse(img.dataset.images||'[]'),i=Number(img.dataset.imageIndex||0);if(i>=urls.length){img.removeAttribute('src');img.classList.add('is-missing');return}img.dataset.imageIndex=String(i+1);img.src=urls[i]}catch{img.removeAttribute('src');img.classList.add('is-missing')}},assetFor(id){return {...(this.db[String(id)]||{}),...(this.enkaChars[String(id)]||{})}},
 itemImage(q){const icon=q?.flat?.icon;return icon?ENKA_UI+icon+'.png':''},
 esc(s){return String(s??'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')},
 num(v,d=0){const n=Number(v);return Number.isFinite(n)?n:d},
@@ -76,7 +76,8 @@ weaponData(c){
 async init(){
  const last=localStorage.getItem('genshin_uid');if(last)el('uid').value=last;
  try{const r=await fetch(DB+'?v=4',{cache:'no-store'}),j=await r.json();this.db=j.avatars||{};this.props={...FALLBACK,...(j.props||{})};this.equip={...EQUIP,...(j.equipType||{})} ;this.status('データベース準備完了','ok')}catch(e){this.status('DB読込失敗・内蔵定義で動作中','bad')}
- this.history=JSON.parse(localStorage.getItem('genshin_history')||'[]');this.renderHistory();
+ try{const saved=JSON.parse(localStorage.getItem('genshin_history')||'[]');this.history=Array.isArray(saved)?saved:[]}catch{this.history=[];localStorage.removeItem('genshin_history')}
+ this.renderHistory();
 },
 async run(uidValue=el('uid').value.trim(),silent=false){
  if(this.busy)return;if(!UID.test(uidValue)){this.toast('UIDは8〜10桁の数字で入力してください');return}
@@ -99,12 +100,11 @@ build(){
 },
 saveHistory(uid,d){
  const item={uid,name:d.playerInfo?.nickname||'-',ar:d.playerInfo?.level||0,wl:d.playerInfo?.worldLevel||0,count:(d.avatarInfoList||[]).length,time:Date.now(),data:d};
- this.history=[item,...this.history.filter(x=>x.uid!==uid)].slice(0,8);localStorage.setItem('genshin_history',JSON.stringify(this.history));this.renderHistory();
+ this.history=[item,...this.history.filter(x=>x.uid!==uid)].slice(0,8);try{localStorage.setItem('genshin_history',JSON.stringify(this.history))}catch{}this.renderHistory();
 },
 renderHistory(){
  const box=el('history');if(!this.history.length){box.innerHTML='<span class="muted">解析履歴はここに表示されます</span>';return}
  box.innerHTML=this.history.map((h,i)=>'<button class="'+(i===0?'fav':'')+'" data-h="'+this.esc(h.uid)+'">'+this.esc(h.name)+' · '+this.esc(h.uid)+'</button>').join('');
- box.querySelectorAll('[data-h]').forEach(b=>b.onclick=()=>this.run(b.dataset.h));
 },
 renderAll(){this.renderHeader();this.renderDashboard();this.renderChars();this.renderCompare();this.renderRaw()},
 theaterText(p){
@@ -168,7 +168,7 @@ download(type){
  const uid=this.data.uid||el('uid').value.trim();let content,mime,ext;
  if(type==='json'){content=JSON.stringify(this.data,null,2);mime='application/json';ext='json'}
  else if(type==='html'){content='<!doctype html><meta charset="utf-8"><title>Genshin Report</title><pre>'+this.esc(JSON.stringify(this.data,null,2))+'</pre>';mime='text/html';ext='html'}
- else {const rows=[['Character','Element','Level','Constellation','Crit Rate','Crit DMG','ER','Artifact Count','Artifact Score']];for(const c of this.chars)rows.push([c.name,c.element,c.level,c.constellations,c.stats.cr,c.stats.cd,c.stats.er,c.arts.length,c.arts.reduce((s,a)=>s+a.score,0)]);const q=s=>{s=String(s??'');return /[",\\n]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s};content='\\ufeff'+rows.map(r=>r.map(q).join(',')).join('\\n');mime='text/csv';ext='csv'}
+ else {const rows=[['Character','Element','Level','Constellation','Crit Rate','Crit DMG','ER','Artifact Count','Artifact Score']];for(const c of this.chars)rows.push([c.name,c.element,c.level,c.constellations,c.stats.cr,c.stats.cd,c.stats.er,c.arts.length,c.arts.reduce((s,a)=>s+a.score,0)]);const q=s=>{s=String(s??'');return /[",\n\r]/.test(s)?'"'+s.replace(/"/g,'""')+'"':s};content='\ufeff'+rows.map(r=>r.map(q).join(',')).join('\n');mime='text/csv';ext='csv'}
  const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([content],{type:mime}));a.download='genshin_'+uid+'_'+new Date().toISOString().slice(0,10)+'.'+ext;a.click();setTimeout(()=>URL.revokeObjectURL(a.href),1000);this.toast('書き出しました');
 },
 clear(){this.data=null;this.chars=[];this.selected=null;['name','ar','wl','count','ach','abyss','theater','stygian','signature','last'].forEach(x=>el(x).textContent='-');el('dash').innerHTML='<div class="empty">UIDを解析するとダッシュボードが表示されます。</div>';el('chars').innerHTML='<div class="empty">UIDを解析してください。</div>';el('compare').innerHTML='<div class="empty">UIDを解析してください。</div>';el('raw').textContent='UIDを解析するとRaw JSONが表示されます。';this.status('入力待ち');},
