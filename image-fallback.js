@@ -4,12 +4,21 @@
   const addUnique = (list, url) => {
     if (url && !list.includes(url)) list.push(url);
   };
-  const enkaImage = (name) => name ? ENKA_UI + String(name) + '.png' : '';
+  const assetName = (value) => String(value || '')
+    .trim()
+    .replace(/^https?:\/\/[^/]+\/ui\//i, '')
+    .replace(/^\/?ui\//i, '')
+    .replace(/\.(?:png|jpe?g|webp)$/i, '');
+  const enkaImage = (name) => {
+    const n = assetName(name);
+    return n ? ENKA_UI + n + '.png' : '';
+  };
 
   App.charImage = function charImage(c, portrait = false) {
     const asset = c?.asset || {};
+    const external = asset.ExternalImages || asset.externalImages || {};
     const data = c?.data || {};
-    const side = asset.SideIconName || asset.sideIconName || '';
+    const side = assetName(asset.SideIconName || asset.sideIconName || '');
     const costumeId = data.costumeId ?? data.costume_id;
     const costumes = asset.Costumes || asset.costumes || {};
     const costume = costumeId != null ? (costumes[String(costumeId)] || costumes[costumeId]) : null;
@@ -17,18 +26,21 @@
     const urls = [];
 
     if (portrait) {
-      addUnique(urls, enkaImage(costume?.art));
+      addUnique(urls, external.portrait);
+      addUnique(urls, enkaImage(costume?.art || costume?.Art));
       if (slug) addUnique(urls, GENSHIN_DEV + '/characters/' + encodeURIComponent(slug) + '/portrait');
+      addUnique(urls, external.icon);
+      addUnique(urls, external.side);
     } else {
-      addUnique(urls, enkaImage(costume?.icon));
-      addUnique(urls, enkaImage(costume?.sideIconName));
+      addUnique(urls, external.icon);
+      addUnique(urls, enkaImage(costume?.icon || costume?.Icon));
+      addUnique(urls, enkaImage(costume?.sideIconName || costume?.SideIcon || costume?.SideIconName));
+      addUnique(urls, external.side);
     }
 
     if (side) {
-      const normalIcon = String(side).replace(/^UI_AvatarIcon_Side_/, 'UI_AvatarIcon_');
+      const normalIcon = side.replace(/^UI_AvatarIcon_Side_/, 'UI_AvatarIcon_');
       addUnique(urls, enkaImage(normalIcon));
-      // SideIconName is supplied by Enka's character metadata, so keep the exact
-      // asset as a fallback instead of assuming the normal icon always exists.
       addUnique(urls, enkaImage(side));
     }
 
