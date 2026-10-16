@@ -1,3 +1,5 @@
+const TEXT_MAP_JA_URL = 'https://raw.githubusercontent.com/seriaati/enka-py-assets/main/data/text_map_ja.json';
+
 export default async function handler(req, res) {
   res.setHeader('Access-Control-Allow-Origin', '*');
   res.setHeader('Access-Control-Allow-Methods', 'GET, OPTIONS');
@@ -9,27 +11,27 @@ export default async function handler(req, res) {
     .split(',')
     .map((x) => x.trim())
     .filter((x) => /^\d+$/.test(x)))]
-    .slice(0, 200);
+    .slice(0, 300);
 
   if (!hashes.length) return res.status(400).json({ error: 'hashesをカンマ区切りで指定してください' });
 
   const controller = new AbortController();
-  const timer = setTimeout(() => controller.abort(), 8000);
+  const timer = setTimeout(() => controller.abort(), 10000);
   try {
-    const response = await fetch(
-      'https://raw.githubusercontent.com/EnkaNetwork/API-docs/master/store/loc.json',
-      { headers: { Accept: 'application/json' }, signal: controller.signal }
-    );
-    if (!response.ok) throw new Error('Enka localization HTTP ' + response.status);
+    const response = await fetch(TEXT_MAP_JA_URL, {
+      headers: { Accept: 'application/json' },
+      signal: controller.signal
+    });
+    if (!response.ok) throw new Error('Japanese localization HTTP ' + response.status);
 
     const loc = await response.json();
-    const ja = {};
+    const locJa = {};
     for (const hash of hashes) {
-      if (loc?.ja?.[hash]) ja[hash] = loc.ja[hash];
+      if (loc?.[hash]) locJa[hash] = loc[hash];
     }
 
-    res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=3600');
-    return res.status(200).json({ locJa: ja });
+    res.setHeader('Cache-Control', 's-maxage=300, stale-while-revalidate=1800');
+    return res.status(200).json({ locJa });
   } catch (e) {
     if (e?.name === 'AbortError') return res.status(504).json({ error: 'ローカライズデータの取得がタイムアウトしました' });
     return res.status(502).json({ error: e?.message || 'ローカライズデータを取得できませんでした' });
