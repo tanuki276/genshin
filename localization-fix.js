@@ -21,6 +21,14 @@
     Ice: 'Element_Cryo.png', Dendro: 'Element_Dendro.png', Wind: 'Element_Anemo.png', Rock: 'Element_Geo.png'
   };
 
+  // Metadata providers sometimes lag behind the live profile API for newly
+  // released characters. Keep the known element for those IDs as a fallback.
+  const NEW_CHARACTER_ELEMENTS = {
+    '10000125': 'Water',   // Columbina
+    '10000126': 'Rock',    // Zibai
+    '10000130': 'Rock'     // Linnea
+  };
+
   App.normalizedElement = function normalizedElement(value) {
     return ELEMENT_ALIASES[String(value || '')] || String(value || '');
   };
@@ -28,13 +36,16 @@
   App.getElement = function getElement(c) {
     const id = String(c.avatarId ?? c.avatar_id ?? c.id);
     const asset = this.assetFor(id);
-    const key = this.normalizedElement(asset.Element || asset.element);
+    const raw = asset.Element || asset.element || NEW_CHARACTER_ELEMENTS[id] || '';
+    const key = this.normalizedElement(raw);
     return ELEMENT_LABELS[key] || '？？？';
   };
 
   App.elementImage = function elementImage(c) {
-    const a = this.assetFor(c.id);
-    const key = this.normalizedElement(a.Element || a.element);
+    const id = String(c?.id ?? c?.data?.avatarId ?? c?.data?.avatar_id ?? '');
+    const a = this.assetFor(id);
+    const raw = a.Element || a.element || NEW_CHARACTER_ELEMENTS[id] || '';
+    const key = this.normalizedElement(raw);
     const file = ELEMENT_FILES[key];
     return file ? ASSET_ROOT + '/Elements/' + file : '';
   };
@@ -44,13 +55,16 @@
     return (key && this.locJa?.[key]) || fallback;
   };
 
+  const equipmentNameHash = (flat) => flat?.nameTextHashMap ?? flat?.nameTextMapHash;
+  const artifactSetHash = (flat) => flat?.setNameTextHashMap ?? flat?.setNameTextMapHash;
+
   App.artifactData = function artifactData(c) {
     const arr = [];
     for (const q of c.equipList || []) {
       const f = q.flat || {};
       if (f.itemType === 'ITEM_RELIQUARY' || f.reliquaryMainstat || f.reliquarySubstats) {
         const main = f.reliquaryMainstat || {}, subs = f.reliquarySubstats || [];
-        const setHash = f.setNameTextMapHash;
+        const setHash = artifactSetHash(f);
         arr.push({
           slot: this.slot(f, q),
           set: this.localizedHash(setHash, setHash != null ? String(setHash) : 'セット情報不明'),
@@ -72,7 +86,7 @@
     for (const q of c.equipList || []) {
       const f = q.flat || {};
       if (f.itemType === 'ITEM_WEAPON' || f.weaponStats || q.weapon) {
-        const nameHash = f.nameTextMapHash;
+        const nameHash = equipmentNameHash(f);
         arr.push({
           name: this.localizedHash(nameHash, nameHash != null ? String(nameHash) : '装備武器'),
           level: this.get(q, 'weapon.level', this.get(q, 'level', 0)),
@@ -91,7 +105,7 @@
     for (const avatar of data?.avatarInfoList || []) {
       for (const q of avatar.equipList || []) {
         const f = q.flat || {};
-        for (const value of [f.setNameTextMapHash, f.nameTextMapHash]) {
+        for (const value of [artifactSetHash(f), equipmentNameHash(f)]) {
           if (value != null && /^\d+$/.test(String(value))) hashes.add(String(value));
         }
       }
