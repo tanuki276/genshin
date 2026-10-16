@@ -1,5 +1,6 @@
 const TEXT_MAP_JA_URL = 'https://raw.githubusercontent.com/seriaati/enka-py-assets/main/data/text_map_ja.json';
-const ENKA_LOC_URL = 'https://raw.githubusercontent.com/EnkaNetwork/API-docs/master/store/loc.json';
+const ENKA_GI_LOCS_URL = 'https://raw.githubusercontent.com/EnkaNetwork/API-docs/master/store/gi/locs.json';
+const ENKA_LEGACY_LOC_URL = 'https://raw.githubusercontent.com/EnkaNetwork/API-docs/master/store/loc.json';
 
 async function fetchJson(url, signal) {
   try {
@@ -13,6 +14,24 @@ async function fetchJson(url, signal) {
     if (e?.name === 'AbortError') throw e;
     return null;
   }
+}
+
+function japaneseMap(source) {
+  if (!source || typeof source !== 'object') return {};
+  for (const key of ['ja', 'jp', 'ja-jp', 'ja_jp', 'JA', 'JP']) {
+    if (source[key] && typeof source[key] === 'object') return source[key];
+  }
+  return {};
+}
+
+function translatedValue(map, hash) {
+  const raw = map?.[hash];
+  if (raw == null) return '';
+  const value = String(raw).trim();
+  // Some upstream localization tables keep a numeric placeholder for entries
+  // they do not know yet. Do not treat that as a successful translation.
+  if (!value || value === String(hash)) return '';
+  return value;
 }
 
 export default async function handler(req, res) {
@@ -33,21 +52,28 @@ export default async function handler(req, res) {
   const controller = new AbortController();
   const timer = setTimeout(() => controller.abort(), 10000);
   try {
-    // Profile equipment hashes originate from Enka, so prefer Enka's matching
-    // localization table. The current text map is kept as a fallback because
-    // newer equipment can appear there before Enka's store catches up.
-    const [currentMap, enkaLoc] = await Promise.all([
+    // Enka's current Genshin data lives under store/gi. Keep the legacy store
+    // and the independent text map as fallbacks so both old and newly released
+    // weapons/artifact sets continue to resolve while upstream sources update.
+    const [currentMap, giLocs, legacyLoc] = await Promise.all([
       fetchJson(TEXT_MAP_JA_URL, controller.signal),
-      fetchJson(ENKA_LOC_URL, controller.signal)
+      fetchJson(ENKA_GI_LOCS_URL, controller.signal),
+      fetchJson(ENKA_LEGACY_LOC_URL, controller.signal)
     ]);
 
-    if (!currentMap && !enkaLoc) throw new Error('Japanese localization sources unavailable');
+    if (!currentMap && !giLocs && !legacyLoc) {
+      throw new Error('Japanese localization sources unavailable');
+    }
 
-    const enkaJa = enkaLoc?.ja || enkaLoc?.jp || enkaLoc?.JA || {};
+    const giJa = japaneseMap(giLocs);
+    const legacyJa = japaneseMap(legacyLoc);
     const locJa = {};
     const missing = [];
+
     for (const hash of hashes) {
-      const value = enkaJa?.[hash] || currentMap?.[hash];
+      const value = translatedValue(giJa, hash)
+        || translatedValue(currentMap, hash)
+        || translatedValue(legacyJa, hash);
       if (value) locJa[hash] = value;
       else missing.push(hash);
     }
